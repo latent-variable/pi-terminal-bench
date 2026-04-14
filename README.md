@@ -32,6 +32,7 @@ Then restart pi or run `/reload` to pick up the new commands.
 | `/bench-doctor` | Check prerequisites and show category breakdown |
 | `/bench-results` | Summary of recent runs |
 | `/bench-results <N>` | Detailed per-task breakdown of run N |
+| `/bench-cleanup` | Find and kill any stray benchmark processes |
 
 All commands default to your active model. Append `provider/model` to override (e.g. `/bench-run hard omlx/Qwen3.5-122B-A10B-4bit`).
 
@@ -230,12 +231,32 @@ To add a task, create a JSON file in `tasks/`:
 - Name tasks with a category prefix: `quixbugs-`, `hard-`, `codegen-`, `perf-`, `security-`, `long-context-`
 - Keep verification fast (under 30s)
 
+## Cleanup and process safety
+
+Each task runs in an isolated temp directory (`mktemp -d`). After every task — pass, fail, or abort — the benchmark automatically:
+
+1. **Kills lingering processes** — finds and terminates any Python/bash processes still referencing the task's workspace directory (SIGTERM, then SIGKILL after 0.5s)
+2. **Removes the temp directory** — deletes the workspace and all files created during the task
+
+This prevents runaway test scripts or aborted tasks from leaving behind processes that consume CPU/memory.
+
+If something slips through (e.g. a hard crash mid-run), use `/bench-cleanup` to manually find and kill any stray benchmark processes running from temp directories.
+
+### No-change detection
+
+If the agent fails to modify any files (e.g. due to connection errors or model failures), the task is marked as **FAIL** with "Agent made no changes to any files" — even if the verification script would have passed. This prevents false positives when the agent doesn't actually attempt the task.
+
+### Context between tasks
+
+In a batch run (`/bench-run quixbugs`), all tasks share the same conversation context. The model carries context from previous tasks, which may affect performance on later tasks. For isolated runs with clean context, run tasks individually in separate Pi sessions.
+
 ## Safety
 
-- All tasks run in isolated temp directories (`mktemp -d`)
+- All tasks run in isolated temp directories — automatically cleaned up after each task
 - Tasks only contain Python/bash code that reads/writes within their workspace
 - No network access, no system modifications, no file operations outside the temp directory
 - Verification scripts only read from the workspace directory
+- Stray processes are killed after each task completes
 
 ## Contributing
 

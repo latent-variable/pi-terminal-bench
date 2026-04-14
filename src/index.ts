@@ -1,4 +1,5 @@
-import { mkdirSync, readdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
+import { mkdirSync, readdirSync, readFileSync, writeFileSync, existsSync, rmSync } from "node:fs";
+import { createHash } from "node:crypto";
 import path from "node:path";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 
@@ -91,6 +92,34 @@ function formatCategorySummary(): string {
 		lines.push(`  other (${uncategorized}) — Uncategorized tasks`);
 	}
 	return `${all.length} tasks in ${CATEGORIES.length} categories:\n${lines.join("\n")}\n\nRun a category:  /bench-run quixbugs\nRun a single task:  /bench-run quixbugs-python-flatten\nRun everything:  /bench-run all`;
+}
+
+// ── Cleanup helpers ──────────────────────────────────────────────────────────
+
+/** Kill any processes whose cwd or command line references the given directory. */
+async function killProcessesInDir(pi: ExtensionAPI, dir: string): Promise<void> {
+	try {
+		// Find PIDs with the workspace dir in their command line (covers python3, bash, etc.)
+		const result = await pi.exec("bash", ["-lc",
+			`pgrep -f "${dir}" 2>/dev/null || true`
+		], { timeout: 5000 });
+		const pids = result.stdout.trim().split("\n").filter(Boolean).map(Number).filter((n) => !isNaN(n) && n > 0);
+		if (pids.length > 0) {
+			await pi.exec("bash", ["-lc", `kill ${pids.join(" ")} 2>/dev/null; sleep 0.5; kill -9 ${pids.join(" ")} 2>/dev/null || true`], { timeout: 5000 });
+		}
+	} catch {
+		// Best-effort cleanup
+	}
+}
+
+/** Remove a temp workspace directory. */
+function cleanupWorkDir(dir: string): void {
+	if (!dir || (!dir.startsWith("/tmp") && !dir.includes("/var/folders/"))) return; // safety guard
+	try {
+		rmSync(dir, { recursive: true, force: true });
+	} catch {
+		// Best-effort cleanup
+	}
 }
 
 export default function terminalBench(pi: ExtensionAPI) {
@@ -374,6 +403,44 @@ export default function terminalBench(pi: ExtensionAPI) {
 			}
 		},
 	});
+
+	// ── /bench-cleanup ──────────────────────────────────────────────────
+	pi.registerCommand("bench-cleanup", {
+		description: "Find and kill any stray benchmark processes (leftover Python/bash from aborted or timed-out tasks).",
+		handler: async (_args, ctx) => {
+			// Look for processes with common benchmark-related patterns in temp dirs
+			const result = await pi.exec("bash", ["-lc", `
+				stale_pids=""
+				# Find python/bash processes running from temp directories (benchmark workspaces)
+				for pid in $(pgrep -f "tmp.*bench\\|tmp.*quixbugs\\|tmp.*test_\\|tmp.*\\.py" 2>/dev/null); do
+					cmd=$(ps -p "$pid" -o args= 2>/dev/null || true)
+					if echo "$cmd" | grep -qE "(tmp\\.|/var/folders/)" 2>/dev/null; then
+						echo "  PID $pid: $cmd"
+						stale_pids="$stale_pids $pid"
+					fi
+				done
+				# Also check for any python3 processes in temp dirs
+				for pid in $(pgrep -f "/tmp/tmp\\." 2>/dev/null; pgrep -f "/var/folders/.*/tmp\\." 2>/dev/null); do
+					cmd=$(ps -p "$pid" -o args= 2>/dev/null || true)
+					if [ -n "$cmd" ]; then
+						echo "  PID $pid: $cmd"
+						stale_pids="$stale_pids $pid"
+					fi
+				done
+				if [ -z "$stale_pids" ]; then
+					echo "No stray benchmark processes found."
+				else
+					unique_pids=$(echo "$stale_pids" | tr ' ' '\\n' | sort -u | tr '\\n' ' ')
+					kill $unique_pids 2>/dev/null
+					sleep 0.5
+					kill -9 $unique_pids 2>/dev/null || true
+					echo ""
+					echo "Killed stray processes."
+				fi
+			`], { timeout: 10000 });
+			ctx.ui.notify(result.stdout.trim() || "Cleanup complete.", "info");
+		},
+	});
 }
 
 // ── Task runner ────────────────────────────────────────────────────────────
@@ -423,6 +490,12 @@ async function runSingleTask(
 		writeFileSync(filePath, content);
 	}
 
+	// Fingerprint setup files so we can detect if the agent made any changes
+	const setupFingerprints: Record<string, string> = {};
+	for (const [filename, content] of Object.entries(task.setup_files)) {
+		setupFingerprints[filename] = createHash("md5").update(content).digest("hex");
+	}
+
 	// Step 3: Send the task instruction as a user message.
 	// Use deliverAs: "followUp" so it queues properly if the agent is still finishing.
 	// The agent processes it natively — the user sees everything in Pi's UI.
@@ -469,6 +542,9 @@ async function runSingleTask(
 
 	// Check if user aborted
 	if (ctx.signal?.aborted) {
+		// Cleanup: kill any processes spawned in the workspace and remove it
+		await killProcessesInDir(pi, workDir);
+		cleanupWorkDir(workDir);
 		return {
 			task: task.name,
 			status: "error",
@@ -479,10 +555,45 @@ async function runSingleTask(
 		};
 	}
 
-	// Step 5: Run verification
+	// Step 5: Check if the agent actually modified any files.
+	// If nothing changed, the agent failed to do its job (e.g. connection errors).
+	let filesChanged = false;
+	for (const [filename, originalHash] of Object.entries(setupFingerprints)) {
+		const filePath = path.join(workDir, filename);
+		if (existsSync(filePath)) {
+			const currentHash = createHash("md5").update(readFileSync(filePath)).digest("hex");
+			if (currentHash !== originalHash) {
+				filesChanged = true;
+				break;
+			}
+		} else {
+			// File was deleted — that counts as a change
+			filesChanged = true;
+			break;
+		}
+	}
+
+	if (!filesChanged) {
+		await killProcessesInDir(pi, workDir);
+		cleanupWorkDir(workDir);
+		return {
+			task: task.name,
+			status: "fail",
+			duration_ms: Date.now() - start,
+			verify_output: "Agent made no changes to any files",
+			model,
+			timestamp,
+		};
+	}
+
+	// Step 6: Run verification
 	const verifyCmd = task.verify.replace(/\$BENCH_WORK_DIR/g, workDir);
 	const verifyResult = await pi.exec("bash", ["-lc", verifyCmd], { timeout: 30000 });
 	const verifyOutput = `${verifyResult.stdout}\n${verifyResult.stderr}`.trim();
+
+	// Step 7: Cleanup — kill any lingering processes from this workspace, then remove it
+	await killProcessesInDir(pi, workDir);
+	cleanupWorkDir(workDir);
 
 	return {
 		task: task.name,
