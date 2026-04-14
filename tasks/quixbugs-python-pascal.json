@@ -1,0 +1,17 @@
+{
+  "name": "quixbugs-python-pascal",
+  "description": "Fix bug in: pascal",
+  "dataset": "quixbugs",
+  "instruction": "There is a Python file called pascal.py in the current directory. It contains a buggy implementation of the pascal algorithm. Find and fix the bug. The fix should be minimal - typically a single line change. Do not rewrite the entire function.",
+  "setup_files": {
+    "pascal.py": "\ndef pascal(n):\n    rows = [[1]]\n    for r in range(1, n):\n        row = []\n        for c in range(0, r):\n            upleft = rows[r - 1][c - 1] if c > 0 else 0\n            upright = rows[r - 1][c] if c < r else 0\n            row.append(upleft + upright)\n        rows.append(row)\n\n    return rows\n\n\n\"\"\"\nPascal's Triangle\npascal\n\n\n\nInput:\n    n: The number of rows to return\n\nPrecondition:\n    n >= 1\n\nOutput:\n    The first n rows of Pascal's triangle as a list of n lists\n\nExample:\n    >>> pascal(5)\n    [[1], [1, 1], [1, 2, 1], [1, 3, 3, 1], [1, 4, 6, 4, 1]]\n\"\"\"\n",
+    "test_pascal.py": "import sys\n\nfrom pascal import pascal\n\nFUNC_NAME = \"pascal\"\ntest_cases = [[[1], [[1]]], [[2], [[1], [1, 1]]], [[3], [[1], [1, 1], [1, 2, 1]]], [[4], [[1], [1, 1], [1, 2, 1], [1, 3, 3, 1]]], [[5], [[1], [1, 1], [1, 2, 1], [1, 3, 3, 1], [1, 4, 6, 4, 1]]]]\n\npassed = 0\nfailed = 0\nfor tc in test_cases:\n    inputs = tc[0]\n    expected = tc[1]\n    try:\n        result = pascal(*inputs)\n        if result == expected:\n            passed += 1\n        else:\n            print(f\"FAIL: {FUNC_NAME}({inputs}) = {result}, expected {expected}\")\n            failed += 1\n    except Exception as e:\n        print(f\"ERROR: {FUNC_NAME}({inputs}) raised {e}\")\n        failed += 1\n\nprint(f\"{passed}/{passed+failed} tests passed\")\nif failed > 0:\n    sys.exit(1)\n"
+  },
+  "verify": "cd $BENCH_WORK_DIR && python3 test_pascal.py",
+  "timeout": 120000,
+  "tags": [
+    "quixbugs",
+    "python",
+    "bug-fix"
+  ]
+}

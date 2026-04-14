@@ -1,0 +1,17 @@
+{
+  "name": "quixbugs-python-max_sublist_sum",
+  "description": "Fix bug in: max sublist sum",
+  "dataset": "quixbugs",
+  "instruction": "There is a Python file called max_sublist_sum.py in the current directory. It contains a buggy implementation of the max sublist sum algorithm. Find and fix the bug. The fix should be minimal - typically a single line change. Do not rewrite the entire function.",
+  "setup_files": {
+    "max_sublist_sum.py": "\ndef max_sublist_sum(arr):\n    max_ending_here = 0\n    max_so_far = 0\n\n    for x in arr:\n        max_ending_here = max_ending_here + x\n        max_so_far = max(max_so_far, max_ending_here)\n\n    return max_so_far\n\n\n\"\"\"\nMax Sublist Sum\nmax-sublist-sum\n\nEfficient equivalent to max(sum(arr[i:j]) for 0 <= i <= j <= len(arr))\n\nAlgorithm source: WordAligned.org by Thomas Guest\n\n\nInput:\n    arr: A list of ints\n\nOutput:\n    The maximum sublist sum\n\nExample:\n    >>> max_sublist_sum([4, -5, 2, 1, -1, 3])\n    5\n\"\"\"\n",
+    "test_max_sublist_sum.py": "import sys\n\nfrom max_sublist_sum import max_sublist_sum\n\nFUNC_NAME = \"max_sublist_sum\"\ntest_cases = [[[[4, -5, 2, 1, -1, 3]], 5], [[[0, -1, 2, -1, 3, -1, 0]], 4], [[[3, 4, 5]], 12], [[[4, -2, -8, 5, -2, 7, 7, 2, -6, 5]], 19], [[[-4, -4, -5]], 0], [[[-2, 1, -3, 4, -1, 2, 1, -5, 4]], 6]]\n\npassed = 0\nfailed = 0\nfor tc in test_cases:\n    inputs = tc[0]\n    expected = tc[1]\n    try:\n        result = max_sublist_sum(*inputs)\n        if result == expected:\n            passed += 1\n        else:\n            print(f\"FAIL: {FUNC_NAME}({inputs}) = {result}, expected {expected}\")\n            failed += 1\n    except Exception as e:\n        print(f\"ERROR: {FUNC_NAME}({inputs}) raised {e}\")\n        failed += 1\n\nprint(f\"{passed}/{passed+failed} tests passed\")\nif failed > 0:\n    sys.exit(1)\n"
+  },
+  "verify": "cd $BENCH_WORK_DIR && python3 test_max_sublist_sum.py",
+  "timeout": 120000,
+  "tags": [
+    "quixbugs",
+    "python",
+    "bug-fix"
+  ]
+}

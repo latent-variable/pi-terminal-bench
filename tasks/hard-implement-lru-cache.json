@@ -1,0 +1,13 @@
+{
+  "name": "hard-implement-lru-cache",
+  "description": "Implement a fully functional LRU cache from scratch",
+  "dataset": "terminal-bench-local",
+  "difficulty": "hard",
+  "instruction": "Implement a Least Recently Used (LRU) cache in Python. Create a file called lru_cache.py with a class LRUCache that supports:\n\n1. __init__(self, capacity: int) - Initialize with a positive capacity\n2. get(self, key: int) -> int - Return the value if key exists, otherwise return -1. Getting a key makes it most recently used.\n3. put(self, key: int, value: int) -> None - Update or insert the value. If capacity is exceeded, evict the least recently used key.\n\nBoth get and put must run in O(1) average time. Do not use functools.lru_cache or collections.OrderedDict.",
+  "setup_files": {
+    "test_lru_cache.py": "import sys\nfrom lru_cache import LRUCache\n\npassed = 0\nfailed = 0\n\ndef check(desc, got, expected):\n    global passed, failed\n    if got == expected:\n        passed += 1\n    else:\n        print(f\"FAIL {desc}: got {got}, expected {expected}\")\n        failed += 1\n\n# Basic test\ncache = LRUCache(2)\ncache.put(1, 1)\ncache.put(2, 2)\ncheck(\"get 1\", cache.get(1), 1)\ncache.put(3, 3)  # evicts key 2\ncheck(\"get 2 after evict\", cache.get(2), -1)\ncache.put(4, 4)  # evicts key 1\ncheck(\"get 1 after evict\", cache.get(1), -1)\ncheck(\"get 3\", cache.get(3), 3)\ncheck(\"get 4\", cache.get(4), 4)\n\n# Update existing key\ncache2 = LRUCache(2)\ncache2.put(1, 1)\ncache2.put(2, 2)\ncache2.put(1, 10)  # update, not insert\ncheck(\"updated value\", cache2.get(1), 10)\ncache2.put(3, 3)  # should evict 2, not 1\ncheck(\"get 2 after update+evict\", cache2.get(2), -1)\ncheck(\"get 1 still works\", cache2.get(1), 10)\n\n# Capacity 1\ncache3 = LRUCache(1)\ncache3.put(1, 1)\ncheck(\"cap1 get\", cache3.get(1), 1)\ncache3.put(2, 2)\ncheck(\"cap1 evicted\", cache3.get(1), -1)\ncheck(\"cap1 new\", cache3.get(2), 2)\n\n# Large sequence\ncache4 = LRUCache(3)\nfor i in range(100):\n    cache4.put(i, i * 10)\ncheck(\"large seq last\", cache4.get(99), 990)\ncheck(\"large seq second last\", cache4.get(98), 980)\ncheck(\"large seq old\", cache4.get(0), -1)\n\nprint(f\"{passed}/{passed+failed} tests passed\")\nif failed > 0:\n    sys.exit(1)\n"
+  },
+  "verify": "cd $BENCH_WORK_DIR && python3 test_lru_cache.py",
+  "timeout": 180000,
+  "tags": ["hard", "data-structure", "implementation", "python"]
+}

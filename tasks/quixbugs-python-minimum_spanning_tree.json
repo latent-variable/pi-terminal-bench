@@ -1,0 +1,19 @@
+{
+  "name": "quixbugs-python-minimum_spanning_tree",
+  "description": "Fix bug in: minimum spanning tree",
+  "dataset": "quixbugs",
+  "instruction": "There is a Python file called minimum_spanning_tree.py in the current directory. It also uses a Node class from node.py. The minimum spanning tree implementation has a bug. Find and fix the bug. The fix should be minimal - typically a single line change. Do not rewrite the entire function. Do not modify node.py.",
+  "setup_files": {
+    "minimum_spanning_tree.py": "\ndef minimum_spanning_tree(weight_by_edge):\n    group_by_node = {}\n    mst_edges = set()\n\n    for edge in sorted(weight_by_edge, key=weight_by_edge.__getitem__):\n        u, v = edge\n        if group_by_node.setdefault(u, {u}) != group_by_node.setdefault(v, {v}):\n            mst_edges.add(edge)\n            group_by_node[u].update(group_by_node[v])\n            for node in group_by_node[v]:\n                group_by_node[node].update(group_by_node[u])\n\n    return mst_edges\n\n\n\n\n\"\"\"\nMinimum Spanning Tree\n\n\nKruskal's algorithm implementation.\n\nInput:\n    weight_by_edge: A dict of the form {(u, v): weight} for every undirected graph edge {u, v}\n\nPrecondition:\n    The input graph is connected\n\nOutput:\n    A set of edges that connects all the vertices of the input graph and has the least possible total weight.\n\nExample:\n    >>> minimum_spanning_tree({\n    ...     (1, 2): 10,\n    ...     (2, 3): 15,\n    ...     (3, 4): 10,\n    ...     (1, 4): 10\n    ... })\n    {(1, 2), (3, 4), (1, 4)}\n\"\"\"\n",
+    "node.py": "class Node:\n    def __init__(self, value=None, successor=None, successors=[], predecessors=[], incoming_nodes=[], outgoing_nodes=[]):\n        self.value = value\n        self.successor = successor\n        self.successors = successors\n        self.predecessors = predecessors\n        self.incoming_nodes = incoming_nodes\n        self.outgoing_nodes = outgoing_nodes\n\n    def successor(self):\n        return self.successor\n\n    def successors(self):\n        return self.successors\n\n    def predecessors(self):\n        return self.predecessors\n",
+    "test_minimum_spanning_tree.py": "from minimum_spanning_tree import minimum_spanning_tree\nimport sys\n\npassed = 0\nfailed = 0\n\n# Case 1: Simple triangle\nresult = minimum_spanning_tree({\n    (1, 2): 10,\n    (2, 3): 15,\n    (3, 1): 20\n})\nresult_edges = set(map(tuple, result))\n# MST should have edges (1,2) and (2,3) with total weight 25\nif result_edges == {(1, 2), (2, 3)}: passed += 1\nelse: print(f\"FAIL case 1: got {result_edges}\"); failed += 1\n\n# Case 2: Four nodes\nresult = minimum_spanning_tree({\n    (1, 2): 1,\n    (1, 3): 5,\n    (2, 3): 3,\n    (2, 4): 6,\n    (3, 4): 2\n})\n# MST: (1,2)=1, (3,4)=2, (2,3)=3 -> total=6\nweights = {(1,2):1,(1,3):5,(2,3):3,(2,4):6,(3,4):2}\nresult_edges = set(map(tuple, result))\ntotal = sum(weights[e] for e in result_edges)\nif total == 6 and len(result_edges) == 3: passed += 1\nelse: print(f\"FAIL case 2: edges={result_edges}, total={total}\"); failed += 1\n\nprint(f\"{passed}/{passed+failed} tests passed\")\nif failed > 0: sys.exit(1)\n"
+  },
+  "verify": "cd $BENCH_WORK_DIR && python3 test_minimum_spanning_tree.py",
+  "timeout": 120000,
+  "tags": [
+    "quixbugs",
+    "python",
+    "bug-fix",
+    "graph"
+  ]
+}

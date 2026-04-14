@@ -1,0 +1,17 @@
+{
+  "name": "quixbugs-python-next_permutation",
+  "description": "Fix bug in: next permutation",
+  "dataset": "quixbugs",
+  "instruction": "There is a Python file called next_permutation.py in the current directory. It contains a buggy implementation of the next permutation algorithm. Find and fix the bug. The fix should be minimal - typically a single line change. Do not rewrite the entire function.",
+  "setup_files": {
+    "next_permutation.py": "\ndef next_permutation(perm):\n    for i in range(len(perm) - 2, -1, -1):\n        if perm[i] < perm[i + 1]:\n            for j in range(len(perm) - 1, i, -1):\n                if perm[j] < perm[i]:\n                    next_perm = list(perm)\n                    next_perm[i], next_perm[j] = perm[j], perm[i]\n                    next_perm[i + 1:] = reversed(next_perm[i + 1:])\n                    return next_perm\n\n\n\n\"\"\"\nNext Permutation\nnext-perm\n\n\nInput:\n    perm: A list of unique ints\n\nPrecondition:\n    perm is not sorted in reverse order\n\nOutput:\n    The lexicographically next permutation of the elements of perm\n\nExample:\n    >>> next_permutation([3, 2, 4, 1])\n    [3, 4, 1, 2]\n\"\"\"\n",
+    "test_next_permutation.py": "import sys\n\nfrom next_permutation import next_permutation\n\nFUNC_NAME = \"next_permutation\"\ntest_cases = [[[[3, 2, 4, 1]], [3, 4, 1, 2]], [[[3, 5, 6, 2, 1]], [3, 6, 1, 2, 5]], [[[3, 5, 6, 2]], [3, 6, 2, 5]], [[[4, 5, 1, 7, 9]], [4, 5, 1, 9, 7]], [[[4, 5, 8, 7, 1]], [4, 7, 1, 5, 8]], [[[9, 5, 2, 6, 1]], [9, 5, 6, 1, 2]], [[[44, 5, 1, 7, 9]], [44, 5, 1, 9, 7]], [[[3, 4, 5]], [3, 5, 4]]]\n\npassed = 0\nfailed = 0\nfor tc in test_cases:\n    inputs = tc[0]\n    expected = tc[1]\n    try:\n        result = next_permutation(*inputs)\n        result = list(result)\n        if result == expected:\n            passed += 1\n        else:\n            print(f\"FAIL: {FUNC_NAME}({inputs}) = {result}, expected {expected}\")\n            failed += 1\n    except Exception as e:\n        print(f\"ERROR: {FUNC_NAME}({inputs}) raised {e}\")\n        failed += 1\n\nprint(f\"{passed}/{passed+failed} tests passed\")\nif failed > 0:\n    sys.exit(1)\n"
+  },
+  "verify": "cd $BENCH_WORK_DIR && python3 test_next_permutation.py",
+  "timeout": 120000,
+  "tags": [
+    "quixbugs",
+    "python",
+    "bug-fix"
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "name": "quixbugs-python-longest_common_subsequence",
+  "description": "Fix bug in: longest common subsequence",
+  "dataset": "quixbugs",
+  "instruction": "There is a Python file called longest_common_subsequence.py in the current directory. It contains a buggy implementation of the longest common subsequence algorithm. Find and fix the bug. The fix should be minimal - typically a single line change. Do not rewrite the entire function.",
+  "setup_files": {
+    "longest_common_subsequence.py": "def longest_common_subsequence(a, b):\n    if not a or not b:\n        return ''\n\n    elif a[0] == b[0]:\n        return a[0] + longest_common_subsequence(a[1:], b)\n\n    else:\n        return max(\n            longest_common_subsequence(a, b[1:]),\n            longest_common_subsequence(a[1:], b),\n            key=len\n        )\n\n\n\n\"\"\"\nLongest Common Subsequence\n\n\nCalculates the longest subsequence common to the two input strings. (A subsequence is any sequence of letters in the same order\nthey appear in the string, possibly skipping letters in between.)\n\nInput:\n    a: The first string to consider.\n    b: The second string to consider.\n\nOutput:\n    The longest string which is a subsequence of both strings. (If multiple subsequences of equal length exist, either is OK.)\n\nExample:\n    >>> longest_common_subsequence('headache', 'pentadactyl')\n    'eadac'\n\"\"\"\n",
+    "test_longest_common_subsequence.py": "import sys\n\nfrom longest_common_subsequence import longest_common_subsequence\n\nFUNC_NAME = \"longest_common_subsequence\"\ntest_cases = [[['headache', 'pentadactyl'], 'eadac'], [['daenarys', 'targaryen'], 'aary'], [['XMJYAUZ', 'MZJAWXU'], 'MJAU'], [['thisisatest', 'testing123testing'], 'tsitest'], [['1234', '1224533324'], '1234'], [['abcbdab', 'bdcaba'], 'bcba'], [['TATAGC', 'TAGCAG'], 'TAAG'], [['ABCBDAB', 'BDCABA'], 'BCBA'], [['ABCD', 'XBCYDQ'], 'BCD'], [['acbdegcedbg', 'begcfeubk'], 'begceb']]\n\npassed = 0\nfailed = 0\nfor tc in test_cases:\n    inputs = tc[0]\n    expected = tc[1]\n    try:\n        result = longest_common_subsequence(*inputs)\n        if result == expected:\n            passed += 1\n        else:\n            print(f\"FAIL: {FUNC_NAME}({inputs}) = {result}, expected {expected}\")\n            failed += 1\n    except Exception as e:\n        print(f\"ERROR: {FUNC_NAME}({inputs}) raised {e}\")\n        failed += 1\n\nprint(f\"{passed}/{passed+failed} tests passed\")\nif failed > 0:\n    sys.exit(1)\n"
+  },
+  "verify": "cd $BENCH_WORK_DIR && python3 test_longest_common_subsequence.py",
+  "timeout": 120000,
+  "tags": [
+    "quixbugs",
+    "python",
+    "bug-fix"
+  ]
+}

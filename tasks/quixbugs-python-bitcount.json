@@ -1,0 +1,17 @@
+{
+  "name": "quixbugs-python-bitcount",
+  "description": "Fix bug in: bitcount",
+  "dataset": "quixbugs",
+  "instruction": "There is a Python file called bitcount.py in the current directory. It contains a buggy implementation of the bitcount algorithm. Find and fix the bug. The fix should be minimal - typically a single line change. Do not rewrite the entire function.",
+  "setup_files": {
+    "bitcount.py": "\ndef bitcount(n):\n    count = 0\n    while n:\n        n ^= n - 1\n        count += 1\n    return count\n\n\n\"\"\"\nBitcount\nbitcount\n\n\nInput:\n    n: a nonnegative int\n\nOutput:\n    The number of 1-bits in the binary encoding of n\n\nExamples:\n    >>> bitcount(127)\n    7\n    >>> bitcount(128)\n    1\n\"\"\"\n",
+    "test_bitcount.py": "import sys\n\nfrom bitcount import bitcount\n\nFUNC_NAME = \"bitcount\"\ntest_cases = [[[127], 7], [[128], 1], [[3005], 9], [[13], 3], [[14], 3], [[27], 4], [[834], 4], [[254], 7], [[256], 1]]\n\npassed = 0\nfailed = 0\nfor tc in test_cases:\n    inputs = tc[0]\n    expected = tc[1]\n    try:\n        result = bitcount(*inputs)\n        if result == expected:\n            passed += 1\n        else:\n            print(f\"FAIL: {FUNC_NAME}({inputs}) = {result}, expected {expected}\")\n            failed += 1\n    except Exception as e:\n        print(f\"ERROR: {FUNC_NAME}({inputs}) raised {e}\")\n        failed += 1\n\nprint(f\"{passed}/{passed+failed} tests passed\")\nif failed > 0:\n    sys.exit(1)\n"
+  },
+  "verify": "cd $BENCH_WORK_DIR && python3 test_bitcount.py",
+  "timeout": 120000,
+  "tags": [
+    "quixbugs",
+    "python",
+    "bug-fix"
+  ]
+}

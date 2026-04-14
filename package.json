@@ -1,0 +1,20 @@
+{
+  "name": "@latent-variable/pi-terminal-bench",
+  "version": "1.0.0",
+  "description": "Self-contained benchmark suite for Pi. Runs QuixBugs and other coding tasks locally — no Docker, no Python frameworks, no external dependencies.",
+  "keywords": ["pi-package", "pi", "terminal-bench", "benchmark", "evaluation", "quixbugs", "coding-agent", "llm-benchmark", "code-evaluation"],
+  "license": "MIT",
+  "author": "latent-variable",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/latent-variable/pi-terminal-bench.git"
+  },
+  "homepage": "https://github.com/latent-variable/pi-terminal-bench#readme",
+  "files": ["src", "tasks", "README.md", "LICENSE", "package.json"],
+  "pi": {
+    "extensions": ["./src/index.ts"]
+  },
+  "peerDependencies": {
+    "@mariozechner/pi-coding-agent": "*"
+  }
+}

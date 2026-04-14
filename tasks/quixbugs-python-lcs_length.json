@@ -1,0 +1,17 @@
+{
+  "name": "quixbugs-python-lcs_length",
+  "description": "Fix bug in: lcs length",
+  "dataset": "quixbugs",
+  "instruction": "There is a Python file called lcs_length.py in the current directory. It contains a buggy implementation of the lcs length algorithm. Find and fix the bug. The fix should be minimal - typically a single line change. Do not rewrite the entire function.",
+  "setup_files": {
+    "lcs_length.py": "def lcs_length(s, t):\n    from collections import Counter\n\n    dp = Counter()\n\n    for i in range(len(s)):\n        for j in range(len(t)):\n            if s[i] == t[j]:\n                dp[i, j] = dp[i - 1, j] + 1\n\n    return max(dp.values()) if dp else 0\n\n\n\n\"\"\"\nLongest Common Substring\nlongest-common-substring\n\nInput:\n    s: a string\n    t: a string\n\nOutput:\n    Length of the longest substring common to s and t\n\nExample:\n    >>> lcs_length('witch', 'sandwich')\n    2\n    >>> lcs_length('meow', 'homeowner')\n    4\n\"\"\"\n",
+    "test_lcs_length.py": "import sys\n\nfrom lcs_length import lcs_length\n\nFUNC_NAME = \"lcs_length\"\ntest_cases = [[['witch', 'sandwich'], 2], [['meow', 'homeowner'], 4], [['fun', ''], 0], [['fun', 'function'], 3], [['cyborg', 'cyber'], 3], [['physics', 'physics'], 7], [['space age', 'pace a'], 6], [['flippy', 'floppy'], 3], [['acbdegcedbg', 'begcfeubk'], 3]]\n\npassed = 0\nfailed = 0\nfor tc in test_cases:\n    inputs = tc[0]\n    expected = tc[1]\n    try:\n        result = lcs_length(*inputs)\n        if result == expected:\n            passed += 1\n        else:\n            print(f\"FAIL: {FUNC_NAME}({inputs}) = {result}, expected {expected}\")\n            failed += 1\n    except Exception as e:\n        print(f\"ERROR: {FUNC_NAME}({inputs}) raised {e}\")\n        failed += 1\n\nprint(f\"{passed}/{passed+failed} tests passed\")\nif failed > 0:\n    sys.exit(1)\n"
+  },
+  "verify": "cd $BENCH_WORK_DIR && python3 test_lcs_length.py",
+  "timeout": 120000,
+  "tags": [
+    "quixbugs",
+    "python",
+    "bug-fix"
+  ]
+}

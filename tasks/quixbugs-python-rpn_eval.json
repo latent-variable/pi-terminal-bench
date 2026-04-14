@@ -1,0 +1,17 @@
+{
+  "name": "quixbugs-python-rpn_eval",
+  "description": "Fix bug in: rpn eval",
+  "dataset": "quixbugs",
+  "instruction": "There is a Python file called rpn_eval.py in the current directory. It contains a buggy implementation of the rpn eval algorithm. Find and fix the bug. The fix should be minimal - typically a single line change. Do not rewrite the entire function.",
+  "setup_files": {
+    "rpn_eval.py": "\ndef rpn_eval(tokens):\n    def op(symbol, a, b):\n        return {\n            '+': lambda a, b: a + b,\n            '-': lambda a, b: a - b,\n            '*': lambda a, b: a * b,\n            '/': lambda a, b: a / b\n        }[symbol](a, b)\n\n    stack = []\n\n    for token in tokens:\n        if isinstance(token, float):\n            stack.append(token)\n        else:\n            a = stack.pop()\n            b = stack.pop()\n            stack.append(\n                op(token, a, b)\n            )\n\n    return stack.pop()\n\n\n\n\"\"\"\nReverse Polish Notation\n\nFour-function calculator with input given in Reverse Polish Notation (RPN).\n\nInput:\n    A list of values and operators encoded as floats and strings\n\nPrecondition:\n    all(\n        isinstance(token, float) or token in ('+', '-', '*', '/') for token in tokens\n    )\n\nExample:\n    >>> rpn_eval([3.0, 5.0, '+', 2.0, '/'])\n    4.0\n\"\"\"\n",
+    "test_rpn_eval.py": "import sys\n\nfrom rpn_eval import rpn_eval\n\nFUNC_NAME = \"rpn_eval\"\ntest_cases = [[[[3.0, 5.0, '+', 2.0, '/']], 4.0], [[[2.0, 2.0, '+']], 4.0], [[[7.0, 4.0, '+', 3.0, '-']], 8.0], [[[1.0, 2.0, '*', 3.0, 4.0, '*', '+']], 14.0], [[[5.0, 9.0, 2.0, '*', '+']], 23.0], [[[5.0, 1.0, 2.0, '+', 4.0, '*', '+', 3.0, '-']], 14.0]]\n\npassed = 0\nfailed = 0\nfor tc in test_cases:\n    inputs = tc[0]\n    expected = tc[1]\n    try:\n        result = rpn_eval(*inputs)\n        if result == expected:\n            passed += 1\n        else:\n            print(f\"FAIL: {FUNC_NAME}({inputs}) = {result}, expected {expected}\")\n            failed += 1\n    except Exception as e:\n        print(f\"ERROR: {FUNC_NAME}({inputs}) raised {e}\")\n        failed += 1\n\nprint(f\"{passed}/{passed+failed} tests passed\")\nif failed > 0:\n    sys.exit(1)\n"
+  },
+  "verify": "cd $BENCH_WORK_DIR && python3 test_rpn_eval.py",
+  "timeout": 120000,
+  "tags": [
+    "quixbugs",
+    "python",
+    "bug-fix"
+  ]
+}

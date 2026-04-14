@@ -1,0 +1,17 @@
+{
+  "name": "quixbugs-python-levenshtein",
+  "description": "Fix bug in: levenshtein",
+  "dataset": "quixbugs",
+  "instruction": "There is a Python file called levenshtein.py in the current directory. It contains a buggy implementation of the levenshtein algorithm. Find and fix the bug. The fix should be minimal - typically a single line change. Do not rewrite the entire function.",
+  "setup_files": {
+    "levenshtein.py": "def levenshtein(source, target):\n    if source == '' or target == '':\n        return len(source) or len(target)\n\n    elif source[0] == target[0]:\n        return 1 + levenshtein(source[1:], target[1:])\n\n    else:\n        return 1 + min(\n            levenshtein(source,     target[1:]),\n            levenshtein(source[1:], target[1:]),\n            levenshtein(source[1:], target)\n        )\n\n\"\"\"\nLevenshtein Distance\n\n\nCalculates the Levenshtein distance between two strings.  The Levenshtein distance is defined as the minimum amount of single-character edits (either removing a character, adding a character, or changing a character) necessary to transform a source string into a target string.\n\nInput:\n    source: The string you begin with.\n    target: The string to transform into.\n\nOutput:\n    The Levenshtein distance between the source and target.\n\nExample:\n    electron can be transformed into neutron by removing the e, turning the l into n, and turning the c into u.\n    >>> levenshtein(electron, neutron)\n    3\n\"\"\"\n",
+    "test_levenshtein.py": "import sys\n\nfrom levenshtein import levenshtein\n\nFUNC_NAME = \"levenshtein\"\ntest_cases = [[['electron', 'neutron'], 3], [['kitten', 'sitting'], 3], [['rosettacode', 'raisethysword'], 8]]\n\npassed = 0\nfailed = 0\nfor tc in test_cases:\n    inputs = tc[0]\n    expected = tc[1]\n    try:\n        result = levenshtein(*inputs)\n        if result == expected:\n            passed += 1\n        else:\n            print(f\"FAIL: {FUNC_NAME}({inputs}) = {result}, expected {expected}\")\n            failed += 1\n    except Exception as e:\n        print(f\"ERROR: {FUNC_NAME}({inputs}) raised {e}\")\n        failed += 1\n\nprint(f\"{passed}/{passed+failed} tests passed\")\nif failed > 0:\n    sys.exit(1)\n"
+  },
+  "verify": "cd $BENCH_WORK_DIR && python3 test_levenshtein.py",
+  "timeout": 120000,
+  "tags": [
+    "quixbugs",
+    "python",
+    "bug-fix"
+  ]
+}

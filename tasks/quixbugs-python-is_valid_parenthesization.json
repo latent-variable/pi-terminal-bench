@@ -1,0 +1,17 @@
+{
+  "name": "quixbugs-python-is_valid_parenthesization",
+  "description": "Fix bug in: is valid parenthesization",
+  "dataset": "quixbugs",
+  "instruction": "There is a Python file called is_valid_parenthesization.py in the current directory. It contains a buggy implementation of the is valid parenthesization algorithm. Find and fix the bug. The fix should be minimal - typically a single line change. Do not rewrite the entire function.",
+  "setup_files": {
+    "is_valid_parenthesization.py": "\ndef is_valid_parenthesization(parens):\n    depth = 0\n    for paren in parens:\n        if paren == '(':\n            depth += 1\n        else:\n            depth -= 1\n            if depth < 0:\n                return False\n\n    return True\n\n\n\"\"\"\nNested Parens\nInput:\n    parens: A string of parentheses\n\nPrecondition:\n    all(paren in '()' for paren in parens)\n\nOutput:\n    Whether the parentheses are properly nested\n\nExamples:\n    >>> is_valid_parenthesization('((()()))()')\n    True\n    >>> is_valid_parenthesization(')()(')\n    False\n\"\"\"\n",
+    "test_is_valid_parenthesization.py": "import sys\n\nfrom is_valid_parenthesization import is_valid_parenthesization\n\nFUNC_NAME = \"is_valid_parenthesization\"\ntest_cases = [[['((()()))()'], True], [[')()('], False], [['(('], False]]\n\npassed = 0\nfailed = 0\nfor tc in test_cases:\n    inputs = tc[0]\n    expected = tc[1]\n    try:\n        result = is_valid_parenthesization(*inputs)\n        if result == expected:\n            passed += 1\n        else:\n            print(f\"FAIL: {FUNC_NAME}({inputs}) = {result}, expected {expected}\")\n            failed += 1\n    except Exception as e:\n        print(f\"ERROR: {FUNC_NAME}({inputs}) raised {e}\")\n        failed += 1\n\nprint(f\"{passed}/{passed+failed} tests passed\")\nif failed > 0:\n    sys.exit(1)\n"
+  },
+  "verify": "cd $BENCH_WORK_DIR && python3 test_is_valid_parenthesization.py",
+  "timeout": 120000,
+  "tags": [
+    "quixbugs",
+    "python",
+    "bug-fix"
+  ]
+}

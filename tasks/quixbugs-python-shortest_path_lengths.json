@@ -1,0 +1,19 @@
+{
+  "name": "quixbugs-python-shortest_path_lengths",
+  "description": "Fix bug in: shortest path lengths",
+  "dataset": "quixbugs",
+  "instruction": "There is a Python file called shortest_path_lengths.py in the current directory. It also uses a Node class from node.py. The shortest path lengths implementation has a bug. Find and fix the bug. The fix should be minimal - typically a single line change. Do not rewrite the entire function. Do not modify node.py.",
+  "setup_files": {
+    "shortest_path_lengths.py": "from collections import defaultdict\n\ndef shortest_path_lengths(n, length_by_edge):\n    length_by_path = defaultdict(lambda: float('inf'))\n    length_by_path.update({(i, i): 0 for i in range(n)})\n    length_by_path.update(length_by_edge)\n\n    for k in range(n):\n        for i in range(n):\n            for j in range(n):\n                length_by_path[i, j] = min(\n                    length_by_path[i, j],\n                    length_by_path[i, k] + length_by_path[j, k]\n                )\n\n    return length_by_path\n\n\n\"\"\"\nAll Shortest Paths\nfloyd-warshall\n\nFloyd-Warshall algorithm implementation.\n\nCalculates the length of the shortest path connecting every ordered pair of nodes in a directed graph.\n\n\n\nInput:\n    n: The number of nodes in the graph. The nodes are assumed to have ids 0..n-1\n    length_by_edge: A dict containing edge length keyed by an ordered pair of node ids\n\nPrecondition:\n    There are no negative-length cycles in the input graph\n\nOutput:\n    A dict containing shortest path length keyed by an ordered pair of node ids\n\"\"\"\n",
+    "node.py": "class Node:\n    def __init__(self, value=None, successor=None, successors=[], predecessors=[], incoming_nodes=[], outgoing_nodes=[]):\n        self.value = value\n        self.successor = successor\n        self.successors = successors\n        self.predecessors = predecessors\n        self.incoming_nodes = incoming_nodes\n        self.outgoing_nodes = outgoing_nodes\n\n    def successor(self):\n        return self.successor\n\n    def successors(self):\n        return self.successors\n\n    def predecessors(self):\n        return self.predecessors\n",
+    "test_shortest_path_lengths.py": "from shortest_path_lengths import shortest_path_lengths\nimport sys\n\npassed = 0\nfailed = 0\n\n# Simple 3-node graph (Floyd-Warshall returns defaultdict with tuple keys)\nresult = shortest_path_lengths(3, {\n    (0, 1): 3,\n    (0, 2): 8,\n    (1, 2): 2\n})\n\n# Access via tuple keys (i, j)\nif result[0, 1] == 3: passed += 1\nelse: print(f\"FAIL 0->1: expected 3, got {result[0, 1]}\"); failed += 1\n\nif result[0, 2] == 5: passed += 1\nelse: print(f\"FAIL 0->2: expected 5, got {result[0, 2]}\"); failed += 1\n\nif result[1, 2] == 2: passed += 1\nelse: print(f\"FAIL 1->2: expected 2, got {result[1, 2]}\"); failed += 1\n\n# Self-distances should be 0\nif result[0, 0] == 0: passed += 1\nelse: print(f\"FAIL 0->0: expected 0, got {result[0, 0]}\"); failed += 1\n\nprint(f\"{passed}/{passed+failed} tests passed\")\nif failed > 0: sys.exit(1)\n"
+  },
+  "verify": "cd $BENCH_WORK_DIR && python3 test_shortest_path_lengths.py",
+  "timeout": 120000,
+  "tags": [
+    "quixbugs",
+    "python",
+    "bug-fix",
+    "graph"
+  ]
+}
