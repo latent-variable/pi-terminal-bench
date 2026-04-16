@@ -242,6 +242,17 @@ This prevents runaway test scripts or aborted tasks from leaving behind processe
 
 If something slips through (e.g. a hard crash mid-run), use `/bench-cleanup` to manually find and kill any stray benchmark processes running from temp directories.
 
+### Task-level timeouts
+
+Each task has a configurable `timeout` (default 120s). When a command hangs (e.g. running tests on buggy code with an infinite loop), the benchmark:
+
+1. **Notifies the model** — sends a steer message explaining the command was killed due to a timeout and likely indicates an infinite loop
+2. **Kills the hung process** — terminates the specific process that exceeded the time limit
+3. **Lets the model retry** — the model keeps working with an extended time window (2x the original timeout) to fix the code and re-run tests
+4. **Verifies normally** — if the model succeeds within the extended window, the task is scored as a pass
+
+Only if the model exhausts the extended timeout is the task recorded as a **TIMEOUT**.
+
 ### No-change detection
 
 If the agent fails to modify any files (e.g. due to connection errors or model failures), the task is marked as **FAIL** with "Agent made no changes to any files" — even if the verification script would have passed. This prevents false positives when the agent doesn't actually attempt the task.
