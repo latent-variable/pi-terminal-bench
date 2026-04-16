@@ -510,12 +510,10 @@ async function runSingleTask(
 
 	pi.sendUserMessage(instruction, { deliverAs: "followUp" });
 
-	// Step 4: Wait for the agent to actually pick up the message and finish.
-	// There's a race: sendUserMessage queues the message, but waitForIdle
-	// could return immediately if the agent hasn't started yet. So we:
-	//   1. Wait until the agent is no longer idle (it started processing), or
-	//      until pending messages are cleared (it processed instantly)
-	//   2. Then wait for full idle (it finished)
+	// Step 4: Wait for the agent to actually pick up the message and finish,
+	// with a timeout to prevent runaway tasks (e.g. infinite loops in tests).
+	const taskTimeout = task.timeout || 120000; // default 2 minutes
+	let timedOut = false;
 
 	// Brief yield to let the message get queued
 	await new Promise((r) => setTimeout(r, 100));
@@ -523,26 +521,70 @@ async function runSingleTask(
 	// Wait for agent to start processing (not idle) or for message to be consumed
 	const waitStart = Date.now();
 	while (ctx.isIdle() && ctx.hasPendingMessages() && Date.now() - waitStart < 10000) {
+		if (Date.now() - start > taskTimeout) { timedOut = true; break; }
 		await new Promise((r) => setTimeout(r, 100));
 	}
 
-	// Now wait for the agent to actually finish
-	if (!ctx.isIdle()) {
-		await ctx.waitForIdle();
+	// Now wait for the agent to actually finish, polling with timeout checks
+	if (!timedOut) {
+		while (!ctx.isIdle() || ctx.hasPendingMessages()) {
+			if (Date.now() - start > taskTimeout || ctx.signal?.aborted) break;
+			// Poll in short intervals so we can check the timeout
+			await new Promise((r) => setTimeout(r, 500));
+		}
+		if (Date.now() - start > taskTimeout) timedOut = true;
 	}
 
-	// Safety: if there are still pending messages (agent finished one turn
-	// but another is queued), keep waiting
-	while (ctx.hasPendingMessages()) {
-		await new Promise((r) => setTimeout(r, 200));
-		if (!ctx.isIdle()) {
-			await ctx.waitForIdle();
+	// Process timeout: a command the model ran likely hung (e.g. running
+	// tests on buggy code with an infinite loop).  Kill the hung process
+	// and tell the model what happened so it can fix the code and retry.
+	// Keep waiting — don't end the task yet.
+	if (timedOut) {
+		// Queue the steer message BEFORE killing the process.
+		// "steer" messages are held while a tool call is active and
+		// delivered the instant it finishes.  By queuing first, the
+		// model sees the timeout explanation immediately after the
+		// empty tool result — no gap where it's confused by "(no output)".
+		pi.sendUserMessage(
+			[
+				`[Benchmark] The command you just ran was killed because it exceeded the ${Math.round(taskTimeout / 1000)}s time limit.`,
+				`This usually means the code has an infinite loop or hangs on certain inputs.`,
+				`Fix the bug and try again. The files are in: ${workDir}`,
+			].join(" "),
+			{ deliverAs: "steer" },
+		);
+
+		await killProcessesInDir(pi, workDir);
+
+		// Give the model more time to fix the code and re-run tests.
+		// Extended timeout = 2x the original task timeout.
+		const extendedTimeout = taskTimeout * 2;
+		const extendedDeadline = start + extendedTimeout;
+
+		while (!ctx.isIdle() || ctx.hasPendingMessages()) {
+			if (Date.now() > extendedDeadline || ctx.signal?.aborted) break;
+			await new Promise((r) => setTimeout(r, 500));
 		}
+
+		// If we hit the extended timeout, the model is truly stuck.
+		if (Date.now() > extendedDeadline && (!ctx.isIdle() || ctx.hasPendingMessages())) {
+			await killProcessesInDir(pi, workDir);
+			cleanupWorkDir(workDir);
+			return {
+				task: task.name,
+				status: "timeout",
+				duration_ms: Date.now() - start,
+				verify_output: `Task timed out after ${Math.round(extendedTimeout / 1000)}s (including retry window)`,
+				model,
+				timestamp,
+			};
+		}
+
+		// Model finished — fall through to the normal verification below.
 	}
 
 	// Check if user aborted
 	if (ctx.signal?.aborted) {
-		// Cleanup: kill any processes spawned in the workspace and remove it
 		await killProcessesInDir(pi, workDir);
 		cleanupWorkDir(workDir);
 		return {
@@ -586,12 +628,13 @@ async function runSingleTask(
 		};
 	}
 
-	// Step 6: Run verification
+	// Step 6: Run verification — even if we timed out, the agent may have
+	// applied the fix before the timeout.  Give it credit if tests pass.
 	const verifyCmd = task.verify.replace(/\$BENCH_WORK_DIR/g, workDir);
 	const verifyResult = await pi.exec("bash", ["-lc", verifyCmd], { timeout: 30000 });
 	const verifyOutput = `${verifyResult.stdout}\n${verifyResult.stderr}`.trim();
 
-	// Step 7: Cleanup — kill any lingering processes from this workspace, then remove it
+	// Step 7: Cleanup
 	await killProcessesInDir(pi, workDir);
 	cleanupWorkDir(workDir);
 
