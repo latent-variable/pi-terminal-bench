@@ -1,0 +1,13 @@
+{
+  "name": "file-operations-hello-world",
+  "description": "Create a file with specific content",
+  "dataset": "terminal-bench",
+  "instruction": "Create a file called hello.txt in the current directory. Write exactly \"Hello, world!\" to it (no surrounding quotes, no trailing characters beyond an optional newline).",
+  "setup_files": {},
+  "verify": "cd $BENCH_WORK_DIR && python3 -c \"import pathlib,sys; p=pathlib.Path('hello.txt'); assert p.exists(), 'hello.txt not found'; t=p.read_text().strip(); assert t == 'Hello, world!', f'got {t!r}'\"",
+  "timeout": 180000,
+  "tags": [
+    "terminal-bench",
+    "file-operations"
+  ]
+}

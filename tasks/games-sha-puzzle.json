@@ -1,0 +1,15 @@
+{
+  "name": "games-sha-puzzle",
+  "description": "Write a self-referential phrase constrained by its own SHA-1 hash",
+  "dataset": "terminal-bench",
+  "instruction": "Find a response that satisfies the following condition: the first letter of each word in your answer, spelled in sequence, has to spell (in English words) the count of alphabetic characters in its own SHA-1 hex digest.\n\nFor example, if your phrase is three words long and the first letters spell \"TWENTYONE\", then the SHA-1 hex digest of the full phrase must contain exactly 21 letters (a-f).\n\nWrite the phrase to solution.txt in the current directory. The verifier uses the word2number package to parse the first-letter string into a number and will compare it to the letter count in sha1(solution_bytes).hexdigest().",
+  "setup_files": {},
+  "verify": "cd $BENCH_WORK_DIR && python3 - <<'PY'\nimport hashlib, pathlib, subprocess, sys\ntry:\n    from word2number import w2n\nexcept ImportError:\n    subprocess.check_call([sys.executable, '-m', 'pip', 'install', '--quiet', 'word2number'])\n    from word2number import w2n\nt = pathlib.Path('solution.txt').read_text().strip()\nassert t, 'solution.txt is empty'\nfirst = ''.join(w[0] for w in t.split())\ntarget = sum(1 for c in hashlib.sha1(t.encode()).hexdigest() if c.isalpha())\nn = w2n.word_to_num(first)\nassert n == target, f'first-letter word spells {n}, but sha1 has {target} letters'\nprint('OK:', first, '==', target)\nPY",
+  "timeout": 360000,
+  "tags": [
+    "terminal-bench",
+    "games",
+    "puzzle",
+    "self-referential"
+  ]
+}

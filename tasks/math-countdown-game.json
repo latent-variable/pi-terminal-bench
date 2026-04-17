@@ -1,0 +1,14 @@
+{
+  "name": "math-countdown-game",
+  "description": "Build an arithmetic expression hitting a target value",
+  "dataset": "terminal-bench",
+  "instruction": "Given the set of numbers [3, 8, 11, 19, 25, 75] and the target 462, construct an arithmetic expression using each number at most once and the operations +, -, *, /, with parentheses as needed, such that it evaluates exactly to the target.\n\nOutput only the arithmetic expression on a single line (digits, +, -, *, /, parentheses, spaces) with no '=' sign and no explanation, and write it to output.txt in the current directory.",
+  "setup_files": {},
+  "verify": "cd $BENCH_WORK_DIR && python3 - <<'PY'\nimport re, pathlib\ne = pathlib.Path('output.txt').read_text().strip()\nassert set(e) <= set('0123456789+-*/() '), f'invalid chars in {e!r}'\nnums = list(map(int, re.findall(r'\\d+', e)))\nallowed = {3, 8, 11, 19, 25, 75}\nfor n in nums:\n    assert n in allowed, f'{n} not in allowed set'\n    assert nums.count(n) == 1, f'{n} used more than once'\nv = eval(e)\nassert v == 462, f'expression evaluates to {v}, not 462'\nprint('OK: expression', e, '==', v)\nPY",
+  "timeout": 180000,
+  "tags": [
+    "terminal-bench",
+    "mathematics",
+    "puzzle"
+  ]
+}

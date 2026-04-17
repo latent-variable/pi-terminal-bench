@@ -1,0 +1,17 @@
+{
+  "name": "file-operations-heterogeneous-dates",
+  "description": "Join two CSVs with heterogeneous date formats and compute a daily temperature delta",
+  "dataset": "terminal-bench",
+  "instruction": "I'm headed to San Francisco and need to know how much the temperature changes each day.\n\nUse daily_temp_sf_high.csv and daily_temp_sf_low.csv in the current directory to calculate the average difference between each day's high and low temperatures. Save that single number to avg_temp.txt.\n\navg_temp.txt must contain only the numerical value (integer or float) with no surrounding text. Note that the two CSVs use different date formats \u2014 you will need to normalize them before joining.",
+  "setup_files": {
+    "daily_temp_sf_high.csv": "date,temperature\n2025-04-19,64\n2025-04-20,63\n2025-04-21,70\n2025-04-22,66\n2025-04-23,57\n2025-04-24,55\n2025-04-25,57",
+    "daily_temp_sf_low.csv": "date,temperature\n04/19/2025 06:00:00,48\n04/20/2025 06:00:00,52\n04-23-2025 06:00:00,52\n04-22-2025 06:00:00,48\n04-24-2025 06:00:00,52\n04-21-2025 06:00:00,48\n04-25-2025 06:00:00,52"
+  },
+  "verify": "cd $BENCH_WORK_DIR && python3 - <<'PY'\nimport pathlib\nt = pathlib.Path('avg_temp.txt').read_text().strip()\nv = float(t)  # raises if non-numeric\nexpected = 11.428571428571429\nassert round(v, 3) == round(expected, 3), f'got {v}, expected {expected}'\nprint('OK: avg delta =', v)\nPY",
+  "timeout": 180000,
+  "tags": [
+    "terminal-bench",
+    "file-operations",
+    "data-processing"
+  ]
+}

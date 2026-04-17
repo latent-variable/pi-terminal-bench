@@ -1,0 +1,23 @@
+{
+  "name": "games-mahjong-winning-hand",
+  "description": "Detect winning Mahjong hand patterns across multiple inputs",
+  "dataset": "terminal-bench",
+  "instruction": "You are given 13 Mahjong tiles as input. Your task is to determine whether the hand can form a winning hand once the player draws one more tile (14 total).\n\nMahjong Tiles (English Notation):\n- Dots: 1D..9D\n- Bamboo: 1B..9B\n- Characters: 1C..9C\n- Honors: East, South, West, North, Red, Green, White\n\nA 14-tile hand wins if it matches ANY of these patterns:\n\n1. Standard: 4 sets + 1 pair. A set is a Chow (3 consecutive tiles in the same suit) or a Pung (3 identical tiles).\n2. Seven Pairs: exactly 7 distinct pairs.\n3. Thirteen Orphans: one of each terminal (1 and 9 of each suit) and each honor tile + one duplicate.\n\nInput: each file hand_###.json in the current directory contains a 13-tile hand as a JSON array of tile strings.\n\nProcess ALL hand_*.json files and write results to result.txt, one line per file in the format `{filename}: { \"<pattern>\", ... }`.\n\nPattern strings: \"Winning hand - Standard\", \"Winning hand - Seven Pairs\", \"Winning hand - Thirteen Orphans\", or \"Not a winning hand\". If a hand can win via multiple patterns, include all that apply.\n\nExamples:\n  hand_002.json: { \"Winning hand - Thirteen Orphans\" }\n  hand_005.json: { \"Winning hand - Seven Pairs\", \"Winning hand - Standard\" }\n  hand_003.json: { \"Not a winning hand\" }",
+  "setup_files": {
+    "hand_001.json": "[\"1D\", \"1D\", \"2D\", \"2D\", \"3D\", \"3D\", \"4B\", \"4B\", \"5B\", \"5B\", \"6B\", \"6B\", \"7C\"]",
+    "hand_002.json": "[\"1D\", \"9D\", \"1B\", \"9B\", \"1C\", \"9C\", \"East\", \"South\", \"West\", \"North\", \"Red\", \"Green\", \"White\"]",
+    "hand_003.json": "[\"1D\", \"3D\", \"5D\", \"7D\", \"9D\", \"2B\", \"4B\", \"6B\", \"8B\", \"1C\", \"3C\", \"5C\", \"7C\"]",
+    "hand_004.json": "[\"1D\", \"1D\", \"9D\", \"9D\", \"1B\", \"1B\", \"9B\", \"9B\", \"East\", \"East\", \"South\", \"South\", \"West\"]",
+    "hand_005.json": "[\"7D\", \"7D\", \"8D\", \"8D\", \"9D\", \"9D\", \"7B\", \"7B\", \"8B\", \"8B\", \"9B\", \"9B\", \"Red\"]",
+    "hand_006.json": "[\"1D\", \"2D\", \"3D\", \"4B\", \"5B\", \"6B\", \"7C\", \"8C\", \"9C\", \"East\", \"East\", \"South\", \"South\"]",
+    "hand_007.json": "[\"1B\", \"1B\", \"2B\", \"2B\", \"3B\", \"3B\", \"4B\", \"4B\", \"5B\", \"5B\", \"6B\", \"6B\", \"7B\"]",
+    "hand_008.json": "[\"1D\", \"1D\", \"5B\", \"5B\", \"9C\", \"9C\", \"East\", \"East\", \"South\", \"South\", \"Red\", \"Red\", \"White\"]"
+  },
+  "verify": "cd $BENCH_WORK_DIR && python3 - <<'PY'\nimport re, pathlib\nexpected = {\n    'hand_001.json': {'Winning hand - Seven Pairs', 'Winning hand - Standard'},\n    'hand_002.json': {'Winning hand - Thirteen Orphans'},\n    'hand_003.json': {'Not a winning hand'},\n    'hand_004.json': {'Winning hand - Seven Pairs'},\n    'hand_005.json': {'Winning hand - Seven Pairs', 'Winning hand - Standard'},\n    'hand_006.json': {'Winning hand - Standard'},\n    'hand_007.json': {'Winning hand - Seven Pairs', 'Winning hand - Standard'},\n    'hand_008.json': {'Winning hand - Seven Pairs'},\n}\nresult = pathlib.Path('result.txt').read_text()\ngot = {}\nfor line in result.strip().splitlines():\n    if ':' not in line: continue\n    name, right = line.split(':', 1)\n    matches = re.findall(r'\"([^\"]+)\"', right)\n    got[name.strip()] = set(matches) if matches else {right.strip()}\nassert len(got) == len(expected), f'got {len(got)} results, expected {len(expected)}'\nfor k, v in expected.items():\n    assert k in got, f'missing result for {k}'\n    assert got[k] == v, f'{k}: got {got[k]}, expected {v}'\nprint('OK: all 8 hands classified correctly')\nPY",
+  "timeout": 360000,
+  "tags": [
+    "terminal-bench",
+    "games",
+    "pattern-matching"
+  ]
+}

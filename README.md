@@ -9,6 +9,7 @@ Self-contained benchmark suite for [pi](https://shittycodingagent.ai). Runs codi
 | **pi** (CLI) | Yes | Runs the agent under test |
 | **Python 3.10+** | Yes | All tasks are Python-based; used for task setup and verification |
 | **bash** | Yes | Task orchestration and some bash-specific tasks |
+| **numpy, pandas, sympy** | Optional | A handful of data-science / math tasks ported from Terminal-Bench use these. Tasks that need them will fail verification if missing; all other tasks run fine with stdlib Python. |
 
 No Docker, no Harbor, no uv, no pip installs. The benchmark runs against whatever model you have active in Pi — local (OMLX, LM Studio, Ollama) or remote (Anthropic, OpenAI, etc.). No additional API configuration needed.
 
@@ -46,8 +47,13 @@ All commands default to your active model. Append `provider/model` to override (
 | Code Generation | `/bench-run codegen` | 3 | Build programs from a spec |
 | Performance | `/bench-run perf` | 2 | Optimize slow code |
 | Security | `/bench-run security` | 2 | Find and fix vulnerabilities |
+| File Operations | `/bench-run file-operations` | 2 | Read/write/transform files on disk |
+| Mathematics | `/bench-run math` | 2 | Symbolic math and numeric puzzles |
+| Games | `/bench-run games` | 2 | Game-logic and puzzle solvers |
+| Data Science | `/bench-run data-science` | 1 | pandas ETL and analysis |
+| Debugging | `/bench-run debugging` | 1 | Diagnose and fix broken code |
 
-## Tasks — 60 total
+## Tasks — 68 total
 
 ### QuixBugs — 40 tasks
 Single-function Python bug fixes from the [QuixBugs benchmark](https://github.com/jkoppel/QuixBugs). Each program has a known single-line bug. Tests verify the fix against the original test suite.
@@ -114,6 +120,23 @@ Find and fix security vulnerabilities:
 
 Run: `/bench-run security`
 
+### Terminal-Bench ports — 8 tasks
+
+Tasks adapted from [Terminal-Bench](https://github.com/laude-institute/terminal-bench) and repackaged to run without Docker. Some of these assume `numpy`, `pandas`, `sympy`, or `word2number` are available in the interpreter that runs verification:
+
+| Task | Category | What it tests |
+|---|---|---|
+| `file-operations-hello-world` | File I/O | Create a file with exact content |
+| `file-operations-heterogeneous-dates` | Data join | Normalize mixed date formats across 2 CSVs (`pandas` helpful) |
+| `math-countdown-game` | Arithmetic | Build an expression hitting a target value |
+| `math-definite-integral` | Symbolic math | Compute `∫₀¹ x²eˣ dx` exactly (`sympy`) |
+| `games-mahjong-winning-hand` | Pattern matching | Classify 8 Mahjong hands by winning pattern |
+| `games-sha-puzzle` | Self-referential | Phrase whose initials spell the letter count of its own SHA-1 (`word2number`) |
+| `data-science-pandas-etl` | ETL | Extract postal code + city, build team_name column (`pandas`) |
+| `debugging-logistic-regression-divergence` | ML bug fix | Fix diverging gradient-ascent loop (`numpy`) |
+
+Run: `/bench-run terminal-bench` (uses the shared tag) or individual category names above.
+
 ### Category summary
 
 | Category | Count | Tags to filter |
@@ -134,6 +157,12 @@ Run: `/bench-run security`
 | Code generation | 3 | `code-generation` |
 | Performance optimization | 2 | `performance` |
 | Security | 2 | `security` |
+| File operations | 2 | `file-operations` |
+| Mathematics | 2 | `mathematics` |
+| Games / puzzles | 2 | `games` |
+| Data science (pandas) | 1 | `data-science` |
+| Debugging (ML) | 1 | `debugging` |
+| Terminal-Bench ports | 8 | `terminal-bench` |
 
 ## Examples
 
@@ -190,7 +219,7 @@ Share your `tasks/` directory with others — they can run the same benchmarks o
 
 ## Adding tasks
 
-This benchmark currently includes a subset of 60 tasks across 6 categories. It's designed to be extensible — PRs adding new tasks are welcome.
+This benchmark currently includes 68 tasks across 11 categories. It's designed to be extensible — PRs adding new tasks are welcome.
 
 To add a task, create a JSON file in `tasks/`:
 
@@ -283,4 +312,4 @@ In a batch run (`/bench-run quixbugs`), all tasks share the same conversation co
 
 ## Contributing
 
-Want to add tasks from [Terminal-Bench](https://github.com/terminal-bench/terminal-bench) or other benchmarks? PRs are welcome. The full Terminal-Bench has 89 tasks — we've ported a representative subset and will expand over time.
+Want to add tasks from [Terminal-Bench](https://github.com/laude-institute/terminal-bench) or other benchmarks? PRs are welcome. The full Terminal-Bench has 241 Docker-based tasks — we've ported a representative subset that runs without Docker and will expand over time.
