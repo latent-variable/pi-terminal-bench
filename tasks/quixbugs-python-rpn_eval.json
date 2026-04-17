@@ -8,7 +8,7 @@
     "test_rpn_eval.py": "import sys\n\nfrom rpn_eval import rpn_eval\n\nFUNC_NAME = \"rpn_eval\"\ntest_cases = [[[[3.0, 5.0, '+', 2.0, '/']], 4.0], [[[2.0, 2.0, '+']], 4.0], [[[7.0, 4.0, '+', 3.0, '-']], 8.0], [[[1.0, 2.0, '*', 3.0, 4.0, '*', '+']], 14.0], [[[5.0, 9.0, 2.0, '*', '+']], 23.0], [[[5.0, 1.0, 2.0, '+', 4.0, '*', '+', 3.0, '-']], 14.0]]\n\npassed = 0\nfailed = 0\nfor tc in test_cases:\n    inputs = tc[0]\n    expected = tc[1]\n    try:\n        result = rpn_eval(*inputs)\n        if result == expected:\n            passed += 1\n        else:\n            print(f\"FAIL: {FUNC_NAME}({inputs}) = {result}, expected {expected}\")\n            failed += 1\n    except Exception as e:\n        print(f\"ERROR: {FUNC_NAME}({inputs}) raised {e}\")\n        failed += 1\n\nprint(f\"{passed}/{passed+failed} tests passed\")\nif failed > 0:\n    sys.exit(1)\n"
   },
   "verify": "cd $BENCH_WORK_DIR && python3 test_rpn_eval.py",
-  "timeout": 120000,
+  "timeout": 180000,
   "tags": [
     "quixbugs",
     "python",

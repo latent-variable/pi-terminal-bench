@@ -233,14 +233,24 @@ To add a task, create a JSON file in `tasks/`:
 
 ## Cleanup and process safety
 
-Each task runs in an isolated temp directory (`mktemp -d`). After every task — pass, fail, or abort — the benchmark automatically:
+Each task runs in an isolated temp directory created with a distinctive prefix (`mktemp -d -t pi-bench` → `$TMPDIR/pi-bench.XXXXXX`). Every cleanup path is scoped to that prefix, so no code in this extension can ever `kill` or `rm` a path that doesn't have `pi-bench.` in its basename. Homebrew, Xcode, git, and any other tool's temp dirs are untouchable.
 
-1. **Kills lingering processes** — finds and terminates any Python/bash processes still referencing the task's workspace directory (SIGTERM, then SIGKILL after 0.5s)
-2. **Removes the temp directory** — deletes the workspace and all files created during the task
+After every task — pass, fail, or abort — the benchmark automatically:
 
-This prevents runaway test scripts or aborted tasks from leaving behind processes that consume CPU/memory.
+1. **Kills lingering processes** — finds roots both ways (argv mentions the workspace, or cwd is under it), then walks the full descendant tree with `pgrep -P` *before* killing. That ordering matters: once `python3 test_x.py` reparents to launchd, its argv doesn't mention the workspace anymore, so naive `pgrep -f` misses it. Walking descendants first catches it.
+2. **Removes the temp directory** — deletes the workspace and unregisters it.
 
-If something slips through (e.g. a hard crash mid-run), use `/bench-cleanup` to manually find and kill any stray benchmark processes running from temp directories.
+### Registry for crashed-session recovery
+
+Active workspaces are tracked in memory *and* persisted to `~/.pi/agent/pi-terminal-bench/active-workdirs.txt`. If pi itself crashes mid-run (so `session_shutdown` never fires), the next run's `/bench-cleanup` can still find and sweep the orphans via the registry file.
+
+### `/bench-cleanup`
+
+Run manually if anything slips through. It:
+
+1. Sweeps every workspace in the registry (in-memory + persisted) first.
+2. Falls back to a broad sweep — but still scoped strictly to paths matching `/pi-bench\.` — for anything that was never registered.
+3. Prints the PIDs and command lines it's about to kill, so you can see exactly what's going away.
 
 ### Task-level timeouts
 

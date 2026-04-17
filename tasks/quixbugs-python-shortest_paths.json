@@ -9,7 +9,7 @@
     "test_shortest_paths.py": "from shortest_paths import shortest_paths\nimport sys\n\npassed = 0\nfailed = 0\n\n# Simple graph\nresult = shortest_paths(\"A\", {\n    (\"A\", \"B\"): 1,\n    (\"A\", \"C\"): 4,\n    (\"B\", \"C\"): 2,\n    (\"B\", \"D\"): 5,\n    (\"C\", \"D\"): 1\n})\n\nif result[\"A\"] == 0: passed += 1\nelse: print(f\"FAIL A: expected 0, got {result['A']}\"); failed += 1\n\nif result[\"B\"] == 1: passed += 1\nelse: print(f\"FAIL B: expected 1, got {result['B']}\"); failed += 1\n\nif result[\"C\"] == 3: passed += 1\nelse: print(f\"FAIL C: expected 3, got {result['C']}\"); failed += 1\n\nif result[\"D\"] == 4: passed += 1\nelse: print(f\"FAIL D: expected 4, got {result['D']}\"); failed += 1\n\nprint(f\"{passed}/{passed+failed} tests passed\")\nif failed > 0: sys.exit(1)\n"
   },
   "verify": "cd $BENCH_WORK_DIR && python3 test_shortest_paths.py",
-  "timeout": 120000,
+  "timeout": 180000,
   "tags": [
     "quixbugs",
     "python",

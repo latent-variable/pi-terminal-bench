@@ -9,6 +9,6 @@
     "test_pipeline.py": "import sys\nimport os\n\nif not os.path.isfile('output.txt'):\n    print('ERROR: output.txt not found')\n    sys.exit(1)\n\nwith open('output.txt') as f:\n    lines = [l.strip() for l in f if l.strip()]\n\npassed = 0\nfailed = 0\n\ndef check(desc, got, expected):\n    global passed, failed\n    if got == expected:\n        passed += 1\n    else:\n        print(f\"FAIL {desc}: got '{got}', expected '{expected}'\")\n        failed += 1\n\n# Expected: Electronics=1049.97, Clothing=254.50, Food=116.50, Books=80.97\n# Sorted desc: Electronics, Clothing, Food, Books\nexpected = [\n    'Electronics 1049.97',\n    'Clothing 254.50',\n    'Food 116.50',\n    'Books 80.97'\n]\n\ncheck('number of lines', len(lines), 4)\nfor i, exp in enumerate(expected):\n    if i < len(lines):\n        check(f'line {i+1}', lines[i], exp)\n    else:\n        check(f'line {i+1}', '<missing>', exp)\n\nprint(f'{passed}/{passed+failed} tests passed')\nif failed > 0:\n    sys.exit(1)\n"
   },
   "verify": "cd $BENCH_WORK_DIR && chmod +x pipeline.sh && ./pipeline.sh && python3 test_pipeline.py",
-  "timeout": 180000,
+  "timeout": 240000,
   "tags": ["hard", "bash", "data-processing", "pipeline"]
 }

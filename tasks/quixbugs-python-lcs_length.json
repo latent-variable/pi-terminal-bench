@@ -8,7 +8,7 @@
     "test_lcs_length.py": "import sys\n\nfrom lcs_length import lcs_length\n\nFUNC_NAME = \"lcs_length\"\ntest_cases = [[['witch', 'sandwich'], 2], [['meow', 'homeowner'], 4], [['fun', ''], 0], [['fun', 'function'], 3], [['cyborg', 'cyber'], 3], [['physics', 'physics'], 7], [['space age', 'pace a'], 6], [['flippy', 'floppy'], 3], [['acbdegcedbg', 'begcfeubk'], 3]]\n\npassed = 0\nfailed = 0\nfor tc in test_cases:\n    inputs = tc[0]\n    expected = tc[1]\n    try:\n        result = lcs_length(*inputs)\n        if result == expected:\n            passed += 1\n        else:\n            print(f\"FAIL: {FUNC_NAME}({inputs}) = {result}, expected {expected}\")\n            failed += 1\n    except Exception as e:\n        print(f\"ERROR: {FUNC_NAME}({inputs}) raised {e}\")\n        failed += 1\n\nprint(f\"{passed}/{passed+failed} tests passed\")\nif failed > 0:\n    sys.exit(1)\n"
   },
   "verify": "cd $BENCH_WORK_DIR && python3 test_lcs_length.py",
-  "timeout": 120000,
+  "timeout": 180000,
   "tags": [
     "quixbugs",
     "python",

@@ -8,7 +8,7 @@
     "test_sqrt.py": "import sys\n\nfrom sqrt import sqrt\n\nFUNC_NAME = \"sqrt\"\ntest_cases = [[[2, 0.01], 1.4166666666666665], [[2, 0.5], 1.5], [[2, 0.3], 1.5], [[4, 0.2], 2], [[27, 0.01], 5.196164639727311], [[33, 0.05], 5.744627526262464], [[170, 0.03], 13.038404876679632]]\n\npassed = 0\nfailed = 0\nfor tc in test_cases:\n    inputs = tc[0]\n    expected = tc[1]\n    try:\n        result = sqrt(*inputs)\n        if abs(result - expected) < 0.01:\n            passed += 1\n        else:\n            print(f\"FAIL: {FUNC_NAME}({inputs}) = {result}, expected {expected}\")\n            failed += 1\n    except Exception as e:\n        print(f\"ERROR: {FUNC_NAME}({inputs}) raised {e}\")\n        failed += 1\n\nprint(f\"{passed}/{passed+failed} tests passed\")\nif failed > 0:\n    sys.exit(1)\n"
   },
   "verify": "cd $BENCH_WORK_DIR && python3 test_sqrt.py",
-  "timeout": 120000,
+  "timeout": 180000,
   "tags": [
     "quixbugs",
     "python",

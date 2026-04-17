@@ -8,7 +8,7 @@
     "test_hanoi.py": "\ndef deep_to_list(obj):\n    if isinstance(obj, (list, tuple)):\n        return [deep_to_list(x) for x in obj]\n    return obj\n\nimport sys\n\nfrom hanoi import hanoi\n\nFUNC_NAME = \"hanoi\"\ntest_cases = [[[0, 1, 3], []], [[1, 1, 3], [[1, 3]]], [[2, 1, 3], [[1, 2], [1, 3], [2, 3]]], [[3, 1, 3], [[1, 3], [1, 2], [3, 2], [1, 3], [2, 1], [2, 3], [1, 3]]], [[4, 1, 3], [[1, 2], [1, 3], [2, 3], [1, 2], [3, 1], [3, 2], [1, 2], [1, 3], [2, 3], [2, 1], [3, 1], [2, 3], [1, 2], [1, 3], [2, 3]]], [[2, 1, 2], [[1, 3], [1, 2], [3, 2]]], [[2, 1, 1], [[1, 2], [1, 1], [2, 1]]], [[2, 3, 1], [[3, 2], [3, 1], [2, 1]]]]\n\npassed = 0\nfailed = 0\nfor tc in test_cases:\n    inputs = tc[0]\n    expected = tc[1]\n    try:\n        result = hanoi(*inputs)\n        if deep_to_list(result) == deep_to_list(expected):\n            passed += 1\n        else:\n            print(f\"FAIL: {FUNC_NAME}({inputs}) = {result}, expected {expected}\")\n            failed += 1\n    except Exception as e:\n        print(f\"ERROR: {FUNC_NAME}({inputs}) raised {e}\")\n        failed += 1\n\nprint(f\"{passed}/{passed+failed} tests passed\")\nif failed > 0:\n    sys.exit(1)\n"
   },
   "verify": "cd $BENCH_WORK_DIR && python3 test_hanoi.py",
-  "timeout": 120000,
+  "timeout": 180000,
   "tags": [
     "quixbugs",
     "python",

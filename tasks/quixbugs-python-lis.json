@@ -8,7 +8,7 @@
     "test_lis.py": "import sys\n\nfrom lis import lis\n\nFUNC_NAME = \"lis\"\ntest_cases = [[[[]], 0], [[[3]], 1], [[[10, 20, 11, 32, 22, 48, 43]], 4], [[[4, 2, 1]], 1], [[[5, 1, 3, 4, 7]], 4], [[[4, 1]], 1], [[[-1, 0, 2]], 3], [[[0, 2]], 2], [[[4, 1, 5, 3, 7, 6, 2]], 3], [[[10, 22, 9, 33, 21, 50, 41, 60, 80]], 6], [[[7, 10, 9, 2, 3, 8, 1]], 3], [[[9, 11, 2, 13, 7, 15]], 4]]\n\npassed = 0\nfailed = 0\nfor tc in test_cases:\n    inputs = tc[0]\n    expected = tc[1]\n    try:\n        result = lis(*inputs)\n        if result == expected:\n            passed += 1\n        else:\n            print(f\"FAIL: {FUNC_NAME}({inputs}) = {result}, expected {expected}\")\n            failed += 1\n    except Exception as e:\n        print(f\"ERROR: {FUNC_NAME}({inputs}) raised {e}\")\n        failed += 1\n\nprint(f\"{passed}/{passed+failed} tests passed\")\nif failed > 0:\n    sys.exit(1)\n"
   },
   "verify": "cd $BENCH_WORK_DIR && python3 test_lis.py",
-  "timeout": 120000,
+  "timeout": 180000,
   "tags": [
     "quixbugs",
     "python",

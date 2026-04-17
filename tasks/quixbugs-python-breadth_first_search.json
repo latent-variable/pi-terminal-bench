@@ -9,7 +9,7 @@
     "test_breadth_first_search.py": "from node import Node\nfrom breadth_first_search import breadth_first_search\nimport sys\n\npassed = 0\nfailed = 0\n\n# Case 1: Strongly connected graph - should find path\nstation1 = Node(\"Westminster\")\nstation2 = Node(\"Waterloo\", None, [station1])\nstation3 = Node(\"Trafalgar Square\", None, [station1, station2])\nstation4 = Node(\"Canary Wharf\", None, [station2, station3])\nstation5 = Node(\"London Bridge\", None, [station4, station3])\nstation6 = Node(\"Tottenham Court Road\", None, [station5, station4])\nresult = breadth_first_search(station6, station1)\nif result == True: passed += 1\nelse: print(f\"FAIL case 1: expected True, got {result}\"); failed += 1\n\n# Case 2: Branching graph - should find path\nnodef = Node(\"F\")\nnodee = Node(\"E\")\nnoded = Node(\"D\")\nnodec = Node(\"C\", None, [nodef])\nnodeb = Node(\"B\", None, [nodee])\nnodea = Node(\"A\", None, [nodeb, nodec, noded])\nresult = breadth_first_search(nodea, nodee)\nif result == True: passed += 1\nelse: print(f\"FAIL case 2: expected True, got {result}\"); failed += 1\n\n# Case 3: Unconnected nodes - should not find path\nresult = breadth_first_search(nodef, nodee)\nif result == False: passed += 1\nelse: print(f\"FAIL case 3: expected False, got {result}\"); failed += 1\n\n# Case 4: Same node - should find path\nresult = breadth_first_search(nodef, nodef)\nif result == True: passed += 1\nelse: print(f\"FAIL case 4: expected True, got {result}\"); failed += 1\n\nprint(f\"{passed}/{passed+failed} tests passed\")\nif failed > 0: sys.exit(1)\n"
   },
   "verify": "cd $BENCH_WORK_DIR && python3 test_breadth_first_search.py",
-  "timeout": 120000,
+  "timeout": 180000,
   "tags": [
     "quixbugs",
     "python",

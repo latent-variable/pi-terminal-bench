@@ -9,7 +9,7 @@
     "test_detect_cycle.py": "from node import Node\nfrom detect_cycle import detect_cycle\nimport sys\n\npassed = 0\nfailed = 0\n\n# Case 1: Cycle exists\nnode1 = Node(\"1\")\nnode2 = Node(\"2\")\nnode3 = Node(\"3\")\nnode1.successor = node2\nnode2.successor = node3\nnode3.successor = node1\nresult = detect_cycle(node1)\nif result == True: passed += 1\nelse: print(f\"FAIL case 1: expected True, got {result}\"); failed += 1\n\n# Case 2: No cycle\nnode_a = Node(\"A\")\nnode_b = Node(\"B\")\nnode_c = Node(\"C\")\nnode_a.successor = node_b\nnode_b.successor = node_c\nresult = detect_cycle(node_a)\nif result == False: passed += 1\nelse: print(f\"FAIL case 2: expected False, got {result}\"); failed += 1\n\n# Case 3: Self-loop\nnode_x = Node(\"X\")\nnode_x.successor = node_x\nresult = detect_cycle(node_x)\nif result == True: passed += 1\nelse: print(f\"FAIL case 3: expected True, got {result}\"); failed += 1\n\n# Case 4: Single node, no cycle\nnode_y = Node(\"Y\")\nresult = detect_cycle(node_y)\nif result == False: passed += 1\nelse: print(f\"FAIL case 4: expected False, got {result}\"); failed += 1\n\nprint(f\"{passed}/{passed+failed} tests passed\")\nif failed > 0: sys.exit(1)\n"
   },
   "verify": "cd $BENCH_WORK_DIR && python3 test_detect_cycle.py",
-  "timeout": 120000,
+  "timeout": 180000,
   "tags": [
     "quixbugs",
     "python",

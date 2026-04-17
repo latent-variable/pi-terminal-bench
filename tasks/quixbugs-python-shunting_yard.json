@@ -8,7 +8,7 @@
     "test_shunting_yard.py": "import sys\n\nfrom shunting_yard import shunting_yard\n\nFUNC_NAME = \"shunting_yard\"\ntest_cases = [[[[]], []], [[[30]], [30]], [[[10, '-', 5, '-', 2]], [10, 5, '-', 2, '-']], [[[34, '-', 12, '/', 5]], [34, 12, 5, '/', '-']], [[[4, '+', 9, '*', 9, '-', 10, '+', 13]], [4, 9, 9, '*', '+', 10, '-', 13, '+']], [[[7, '*', 43, '-', 7, '+', 13, '/', 7]], [7, 43, '*', 7, '-', 13, 7, '/', '+']]]\n\npassed = 0\nfailed = 0\nfor tc in test_cases:\n    inputs = tc[0]\n    expected = tc[1]\n    try:\n        result = shunting_yard(*inputs)\n        if result == expected:\n            passed += 1\n        else:\n            print(f\"FAIL: {FUNC_NAME}({inputs}) = {result}, expected {expected}\")\n            failed += 1\n    except Exception as e:\n        print(f\"ERROR: {FUNC_NAME}({inputs}) raised {e}\")\n        failed += 1\n\nprint(f\"{passed}/{passed+failed} tests passed\")\nif failed > 0:\n    sys.exit(1)\n"
   },
   "verify": "cd $BENCH_WORK_DIR && python3 test_shunting_yard.py",
-  "timeout": 120000,
+  "timeout": 180000,
   "tags": [
     "quixbugs",
     "python",

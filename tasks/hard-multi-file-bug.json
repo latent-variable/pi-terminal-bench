@@ -11,6 +11,6 @@
     "test_multi_file.py": "import subprocess\nimport sys\n\nresult = subprocess.run([sys.executable, 'main.py'], capture_output=True, text=True, timeout=10)\noutput = result.stdout.strip()\n\nexpected_lines = [\n    \"OK Widget: 10 units, $99.90\",\n    \"REJECT Gadget: insufficient stock (50 < 60)\",\n    \"OK Doohickey: 5 units, $24.95\",\n    \"REJECT Thingamajig: not found\",\n    \"Inventory value: $3121.65\",\n    \"After restock value: $4070.85\"\n]\n\nlines = output.split('\\n')\npassed = 0\nfailed = 0\n\nfor i, expected in enumerate(expected_lines):\n    if i < len(lines) and lines[i].strip() == expected:\n        passed += 1\n    else:\n        got = lines[i].strip() if i < len(lines) else '<missing>'\n        print(f\"FAIL line {i+1}: expected '{expected}', got '{got}'\")\n        failed += 1\n\nprint(f\"{passed}/{passed+failed} tests passed\")\nif failed > 0:\n    sys.exit(1)\n"
   },
   "verify": "cd $BENCH_WORK_DIR && python3 test_multi_file.py",
-  "timeout": 180000,
+  "timeout": 240000,
   "tags": ["hard", "debugging", "multi-file", "python"]
 }

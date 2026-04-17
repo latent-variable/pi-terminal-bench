@@ -9,7 +9,7 @@
     "test_reverse_linked_list.py": "from node import Node\nfrom reverse_linked_list import reverse_linked_list\nimport sys\n\npassed = 0\nfailed = 0\n\n# Case 1: Three-node list\nnode3 = Node(3)\nnode2 = Node(2, node3)\nnode1 = Node(1, node2)\nresult = reverse_linked_list(node1)\nvalues = []\ncurr = result\nwhile curr:\n    values.append(curr.value)\n    curr = curr.successor\nif values == [3, 2, 1]: passed += 1\nelse: print(f\"FAIL case 1: expected [3,2,1], got {values}\"); failed += 1\n\n# Case 2: Single node\nnode_single = Node(42)\nresult = reverse_linked_list(node_single)\nif result.value == 42 and result.successor is None: passed += 1\nelse: print(f\"FAIL case 2: single node reverse failed\"); failed += 1\n\n# Case 3: Five nodes\nn5 = Node(5)\nn4 = Node(4, n5)\nn3 = Node(3, n4)\nn2 = Node(2, n3)\nn1 = Node(1, n2)\nresult = reverse_linked_list(n1)\nvalues = []\ncurr = result\nwhile curr:\n    values.append(curr.value)\n    curr = curr.successor\nif values == [5, 4, 3, 2, 1]: passed += 1\nelse: print(f\"FAIL case 3: expected [5,4,3,2,1], got {values}\"); failed += 1\n\nprint(f\"{passed}/{passed+failed} tests passed\")\nif failed > 0: sys.exit(1)\n"
   },
   "verify": "cd $BENCH_WORK_DIR && python3 test_reverse_linked_list.py",
-  "timeout": 120000,
+  "timeout": 180000,
   "tags": [
     "quixbugs",
     "python",

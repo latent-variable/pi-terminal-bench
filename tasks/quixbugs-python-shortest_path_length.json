@@ -9,7 +9,7 @@
     "test_shortest_path_length.py": "from node import Node\nfrom shortest_path_length import shortest_path_length\nimport sys\n\npassed = 0\nfailed = 0\n\nnode1 = Node(\"A\")\nnode2 = Node(\"B\")\nnode3 = Node(\"C\")\nnode4 = Node(\"D\")\nnode5 = Node(\"E\")\n\nnode1.successors = [node2, node3]\nnode2.successors = [node4]\nnode3.successors = [node4]\nnode4.successors = [node5]\n\nlength_by_edge = {\n    (node1, node2): 1,\n    (node1, node3): 4,\n    (node2, node4): 2,\n    (node3, node4): 1,\n    (node4, node5): 3\n}\n\nresult = shortest_path_length(length_by_edge, node1, node5)\nif result == 6: passed += 1\nelse: print(f\"FAIL: expected 6, got {result}\"); failed += 1\n\n# Self-loop\nresult2 = shortest_path_length(length_by_edge, node1, node1)\nif result2 == 0: passed += 1\nelse: print(f\"FAIL self: expected 0, got {result2}\"); failed += 1\n\nprint(f\"{passed}/{passed+failed} tests passed\")\nif failed > 0: sys.exit(1)\n"
   },
   "verify": "cd $BENCH_WORK_DIR && python3 test_shortest_path_length.py",
-  "timeout": 120000,
+  "timeout": 180000,
   "tags": [
     "quixbugs",
     "python",

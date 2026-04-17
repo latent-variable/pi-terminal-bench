@@ -8,7 +8,7 @@
     "test_to_base.py": "import sys\n\nfrom to_base import to_base\n\nFUNC_NAME = \"to_base\"\ntest_cases = [[[8227, 18], '1771'], [[73, 8], '111'], [[16, 19], 'G'], [[31, 16], '1F'], [[41, 2], '101001'], [[44, 5], '134'], [[27, 23], '14'], [[56, 23], '2A'], [[8237, 24], 'E75'], [[8237, 34], '749']]\n\npassed = 0\nfailed = 0\nfor tc in test_cases:\n    inputs = tc[0]\n    expected = tc[1]\n    try:\n        result = to_base(*inputs)\n        if result == expected:\n            passed += 1\n        else:\n            print(f\"FAIL: {FUNC_NAME}({inputs}) = {result}, expected {expected}\")\n            failed += 1\n    except Exception as e:\n        print(f\"ERROR: {FUNC_NAME}({inputs}) raised {e}\")\n        failed += 1\n\nprint(f\"{passed}/{passed+failed} tests passed\")\nif failed > 0:\n    sys.exit(1)\n"
   },
   "verify": "cd $BENCH_WORK_DIR && python3 test_to_base.py",
-  "timeout": 120000,
+  "timeout": 180000,
   "tags": [
     "quixbugs",
     "python",

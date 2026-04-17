@@ -9,7 +9,7 @@
     "test_topological_ordering.py": "from node import Node\nfrom topological_ordering import topological_ordering\nimport sys\n\npassed = 0\nfailed = 0\n\n# Simple DAG\nfive = Node(5)\nseven = Node(7)\nthree = Node(3)\neleven = Node(11)\neight = Node(8)\ntwo = Node(2)\nnine = Node(9)\nten = Node(10)\n\nfive.outgoing_nodes = [eleven]\nseven.outgoing_nodes = [eleven, eight]\nthree.outgoing_nodes = [eight, ten]\neleven.incoming_nodes = [five, seven]\neleven.outgoing_nodes = [two, nine, ten]\neight.incoming_nodes = [seven, three]\neight.outgoing_nodes = [nine]\ntwo.incoming_nodes = [eleven]\nnine.incoming_nodes = [eleven, eight]\nten.incoming_nodes = [three, eleven]\n\nresult = topological_ordering([five, seven, three, eleven, eight, two, nine, ten])\n\n# Verify topological order: for every edge u->v, u appears before v\norder_idx = {node: i for i, node in enumerate(result)}\nedges = [\n    (five, eleven), (seven, eleven), (seven, eight), (three, eight),\n    (three, ten), (eleven, two), (eleven, nine), (eleven, ten), (eight, nine)\n]\nvalid = True\nfor u, v in edges:\n    if order_idx.get(u, float(\"inf\")) >= order_idx.get(v, float(\"-inf\")):\n        valid = False\n        print(f\"FAIL: {u.value} should come before {v.value}\")\n        failed += 1\n\nif valid:\n    passed += 1\n\n# Check all nodes present\nif len(result) == 8: passed += 1\nelse: print(f\"FAIL: expected 8 nodes, got {len(result)}\"); failed += 1\n\nprint(f\"{passed}/{passed+failed} tests passed\")\nif failed > 0: sys.exit(1)\n"
   },
   "verify": "cd $BENCH_WORK_DIR && python3 test_topological_ordering.py",
-  "timeout": 120000,
+  "timeout": 180000,
   "tags": [
     "quixbugs",
     "python",

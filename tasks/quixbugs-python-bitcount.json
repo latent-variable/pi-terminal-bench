@@ -8,7 +8,7 @@
     "test_bitcount.py": "import sys\n\nfrom bitcount import bitcount\n\nFUNC_NAME = \"bitcount\"\ntest_cases = [[[127], 7], [[128], 1], [[3005], 9], [[13], 3], [[14], 3], [[27], 4], [[834], 4], [[254], 7], [[256], 1]]\n\npassed = 0\nfailed = 0\nfor tc in test_cases:\n    inputs = tc[0]\n    expected = tc[1]\n    try:\n        result = bitcount(*inputs)\n        if result == expected:\n            passed += 1\n        else:\n            print(f\"FAIL: {FUNC_NAME}({inputs}) = {result}, expected {expected}\")\n            failed += 1\n    except Exception as e:\n        print(f\"ERROR: {FUNC_NAME}({inputs}) raised {e}\")\n        failed += 1\n\nprint(f\"{passed}/{passed+failed} tests passed\")\nif failed > 0:\n    sys.exit(1)\n"
   },
   "verify": "cd $BENCH_WORK_DIR && python3 test_bitcount.py",
-  "timeout": 120000,
+  "timeout": 180000,
   "tags": [
     "quixbugs",
     "python",

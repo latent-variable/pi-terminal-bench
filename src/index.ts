@@ -1,12 +1,23 @@
-import { mkdirSync, readdirSync, readFileSync, writeFileSync, existsSync, rmSync } from "node:fs";
+import { mkdirSync, readdirSync, readFileSync, writeFileSync, appendFileSync, existsSync, rmSync } from "node:fs";
 import { createHash } from "node:crypto";
 import path from "node:path";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 
 const PACKAGE_DIR = path.resolve(__dirname, "..");
 const TASKS_DIR = path.join(PACKAGE_DIR, "tasks");
-const RESULTS_DIR = path.join(process.env.HOME ?? ".", ".pi", "agent", "pi-terminal-bench", "results");
+const STATE_DIR = path.join(process.env.HOME ?? ".", ".pi", "agent", "pi-terminal-bench");
+const RESULTS_DIR = path.join(STATE_DIR, "results");
 const STATUS_KEY = "terminal-bench";
+
+// All benchmark workspaces are named with this prefix so cleanup can
+// target only directories we created. `mktemp -d -t pi-bench` produces
+// $TMPDIR/pi-bench.XXXXXX on macOS — distinct from generic tmp.XXXXXX
+// paths that git, homebrew, xcode, and other tools create.
+const WORKDIR_PREFIX = "pi-bench";
+
+// Registry of in-flight workspaces, persisted so a crashed pi session's
+// orphans can be recovered by /bench-cleanup on the next run.
+const REGISTRY_FILE = path.join(STATE_DIR, "active-workdirs.txt");
 
 interface TaskDef {
 	name: string;
@@ -96,25 +107,106 @@ function formatCategorySummary(): string {
 
 // ── Cleanup helpers ──────────────────────────────────────────────────────────
 
-/** Kill any processes whose cwd or command line references the given directory. */
-async function killProcessesInDir(pi: ExtensionAPI, dir: string): Promise<void> {
+/** Workspaces currently owned by a running task. Swept on session shutdown. */
+const activeWorkDirs = new Set<string>();
+
+/** Only treat a path as benchmark-owned if it carries our prefix. */
+function isOwnedWorkDir(dir: string): boolean {
+	if (!dir) return false;
+	const base = path.basename(dir);
+	return base.startsWith(`${WORKDIR_PREFIX}.`);
+}
+
+function registerWorkDir(dir: string): void {
+	if (!isOwnedWorkDir(dir)) return;
+	activeWorkDirs.add(dir);
 	try {
-		// Find PIDs with the workspace dir in their command line (covers python3, bash, etc.)
-		const result = await pi.exec("bash", ["-lc",
-			`pgrep -f "${dir}" 2>/dev/null || true`
-		], { timeout: 5000 });
-		const pids = result.stdout.trim().split("\n").filter(Boolean).map(Number).filter((n) => !isNaN(n) && n > 0);
-		if (pids.length > 0) {
-			await pi.exec("bash", ["-lc", `kill ${pids.join(" ")} 2>/dev/null; sleep 0.5; kill -9 ${pids.join(" ")} 2>/dev/null || true`], { timeout: 5000 });
-		}
+		mkdirSync(STATE_DIR, { recursive: true });
+		appendFileSync(REGISTRY_FILE, dir + "\n");
+	} catch {
+		// Best-effort; registry is a recovery aid, not a correctness invariant.
+	}
+}
+
+function unregisterWorkDir(dir: string): void {
+	activeWorkDirs.delete(dir);
+	try {
+		if (!existsSync(REGISTRY_FILE)) return;
+		const remaining = readFileSync(REGISTRY_FILE, "utf-8")
+			.split("\n")
+			.filter((line) => line && line !== dir);
+		writeFileSync(REGISTRY_FILE, remaining.length ? remaining.join("\n") + "\n" : "");
+	} catch {
+		// Best-effort
+	}
+}
+
+/** Read the persisted registry — used to recover orphans from crashed sessions. */
+function readRegistry(): string[] {
+	try {
+		if (!existsSync(REGISTRY_FILE)) return [];
+		return readFileSync(REGISTRY_FILE, "utf-8")
+			.split("\n")
+			.map((l) => l.trim())
+			.filter((l) => l && isOwnedWorkDir(l));
+	} catch {
+		return [];
+	}
+}
+
+/**
+ * Kill processes associated with `dir`. Finds roots two ways — argv references
+ * the dir, or cwd is under the dir — then walks descendants with pgrep -P
+ * before killing, so orphaned grandchildren (e.g. `python3 test_x.py` spawned
+ * by `cd $DIR && python3 test_x.py`, whose argv no longer mentions the dir)
+ * are caught before reparenting to launchd loses them.
+ */
+async function killProcessesInDir(pi: ExtensionAPI, dir: string): Promise<void> {
+	if (!dir) return;
+	const script = `
+		set +e
+		dir=${JSON.stringify(dir)}
+		# macOS resolves /var/folders -> /private/var/folders for process cwd,
+		# so also match the realpath form.
+		dir_real=$(cd "$dir" 2>/dev/null && pwd -P || echo "$dir")
+		# Roots: argv mentions the dir, OR cwd is under the dir (either form).
+		roots=$(pgrep -f "$dir" 2>/dev/null; pgrep -f "$dir_real" 2>/dev/null)
+		cwd_roots=$(lsof -d cwd -Fpn 2>/dev/null | awk -v d1="$dir" -v d2="$dir_real" '
+			/^p/ { pid = substr($0, 2); next }
+			/^n/ { cwd = substr($0, 2); if (index(cwd, d1) == 1 || index(cwd, d2) == 1) print pid }
+		')
+		roots=$(printf '%s\\n%s\\n' "$roots" "$cwd_roots" | grep -E '^[0-9]+$' | sort -u)
+		[ -z "$roots" ] && exit 0
+		# Walk descendants BEFORE killing so reparenting doesn't drop them.
+		all="$roots"
+		frontier="$roots"
+		for _ in 1 2 3 4 5 6 7 8; do
+			[ -z "$frontier" ] && break
+			kids=$(printf '%s\\n' $frontier | xargs -n1 pgrep -P 2>/dev/null | grep -E '^[0-9]+$' | sort -u)
+			[ -z "$kids" ] && break
+			new=$(printf '%s\\n' $kids | grep -vxF -f <(printf '%s\\n' $all) 2>/dev/null)
+			[ -z "$new" ] && break
+			all=$(printf '%s\\n%s\\n' "$all" "$new" | sort -u)
+			frontier="$new"
+		done
+		printf '%s\\n' $all | xargs kill 2>/dev/null
+		sleep 0.5
+		printf '%s\\n' $all | xargs kill -9 2>/dev/null
+		exit 0
+	`;
+	try {
+		await pi.exec("bash", ["-lc", script], { timeout: 10000 });
 	} catch {
 		// Best-effort cleanup
 	}
 }
 
-/** Remove a temp workspace directory. */
+/** Remove a temp workspace directory and drop it from the registry. */
 function cleanupWorkDir(dir: string): void {
-	if (!dir || (!dir.startsWith("/tmp") && !dir.includes("/var/folders/"))) return; // safety guard
+	unregisterWorkDir(dir);
+	// Only delete directories we own. The prefix guard is the single rule —
+	// we will never rm -rf a path without `pi-bench.` in its basename.
+	if (!isOwnedWorkDir(dir)) return;
 	try {
 		rmSync(dir, { recursive: true, force: true });
 	} catch {
@@ -406,40 +498,104 @@ export default function terminalBench(pi: ExtensionAPI) {
 
 	// ── /bench-cleanup ──────────────────────────────────────────────────
 	pi.registerCommand("bench-cleanup", {
-		description: "Find and kill any stray benchmark processes (leftover Python/bash from aborted or timed-out tasks).",
+		description: "Find and kill any stray benchmark processes running under pi-bench.* workspaces (leftovers from aborted tasks or crashed sessions).",
 		handler: async (_args, ctx) => {
-			// Look for processes with common benchmark-related patterns in temp dirs
+			// Sweep per-workspace first — this is the narrowest scope.
+			// Dirs come from (a) the in-memory set and (b) the persisted registry,
+			// so crashed-session leftovers are recovered.
+			const registryDirs = readRegistry();
+			const allDirs = Array.from(new Set([...activeWorkDirs, ...registryDirs])).filter(isOwnedWorkDir);
+			const perDirReports: string[] = [];
+			for (const dir of allDirs) {
+				await killProcessesInDir(pi, dir).catch(() => {});
+				cleanupWorkDir(dir);
+				perDirReports.push(`  swept ${dir}`);
+			}
+			// Broad sweep scoped ONLY to our prefix — catches anything we never
+			// tracked (e.g. if a task failed before registration). Cannot touch
+			// other tools' temp dirs: only `*/pi-bench.*` paths match.
 			const result = await pi.exec("bash", ["-lc", `
-				stale_pids=""
-				# Find python/bash processes running from temp directories (benchmark workspaces)
-				for pid in $(pgrep -f "tmp.*bench\\|tmp.*quixbugs\\|tmp.*test_\\|tmp.*\\.py" 2>/dev/null); do
-					cmd=$(ps -p "$pid" -o args= 2>/dev/null || true)
-					if echo "$cmd" | grep -qE "(tmp\\.|/var/folders/)" 2>/dev/null; then
-						echo "  PID $pid: $cmd"
-						stale_pids="$stale_pids $pid"
-					fi
-				done
-				# Also check for any python3 processes in temp dirs
-				for pid in $(pgrep -f "/tmp/tmp\\." 2>/dev/null; pgrep -f "/var/folders/.*/tmp\\." 2>/dev/null); do
-					cmd=$(ps -p "$pid" -o args= 2>/dev/null || true)
-					if [ -n "$cmd" ]; then
-						echo "  PID $pid: $cmd"
-						stale_pids="$stale_pids $pid"
-					fi
-				done
-				if [ -z "$stale_pids" ]; then
-					echo "No stray benchmark processes found."
-				else
-					unique_pids=$(echo "$stale_pids" | tr ' ' '\\n' | sort -u | tr '\\n' ' ')
-					kill $unique_pids 2>/dev/null
-					sleep 0.5
-					kill -9 $unique_pids 2>/dev/null || true
-					echo ""
-					echo "Killed stray processes."
+				set +e
+				# Roots: any process with ${WORKDIR_PREFIX}. in its argv or cwd.
+				arg_roots=$(pgrep -f '/${WORKDIR_PREFIX}\\.' 2>/dev/null)
+				cwd_roots=$(lsof -d cwd -Fpn 2>/dev/null | awk '
+					/^p/ { pid = substr($0, 2); next }
+					/^n/ { cwd = substr($0, 2); if (cwd ~ /\\/${WORKDIR_PREFIX}\\./) print pid }
+				')
+				roots=$(printf '%s\\n%s\\n' "$arg_roots" "$cwd_roots" | grep -E '^[0-9]+$' | sort -u)
+				if [ -z "$roots" ]; then
+					echo "No stray ${WORKDIR_PREFIX}.* processes found."
+					exit 0
 				fi
-			`], { timeout: 10000 });
-			ctx.ui.notify(result.stdout.trim() || "Cleanup complete.", "info");
+				# Walk descendants BEFORE killing so orphans don't escape reparenting.
+				all="$roots"
+				frontier="$roots"
+				for _ in 1 2 3 4 5 6 7 8; do
+					[ -z "$frontier" ] && break
+					kids=$(printf '%s\\n' $frontier | xargs -n1 pgrep -P 2>/dev/null | grep -E '^[0-9]+$' | sort -u)
+					[ -z "$kids" ] && break
+					new=$(printf '%s\\n' $kids | grep -vxF -f <(printf '%s\\n' $all) 2>/dev/null)
+					[ -z "$new" ] && break
+					all=$(printf '%s\\n%s\\n' "$all" "$new" | sort -u)
+					frontier="$new"
+				done
+				echo "Killing processes under ${WORKDIR_PREFIX}.* workspaces:"
+				for pid in $all; do
+					cmd=$(ps -p "$pid" -o args= 2>/dev/null)
+					[ -n "$cmd" ] && echo "  PID $pid: $cmd"
+				done
+				printf '%s\\n' $all | xargs kill 2>/dev/null
+				sleep 0.5
+				printf '%s\\n' $all | xargs kill -9 2>/dev/null
+				echo "Killed."
+			`], { timeout: 15000 });
+			const header = perDirReports.length > 0
+				? `Swept ${perDirReports.length} registered workspace(s):\n${perDirReports.join("\n")}\n\n`
+				: "";
+			ctx.ui.notify(header + (result.stdout.trim() || "Cleanup complete."), "info");
 		},
+	});
+
+	// ── session_shutdown sweep ─────────────────────────────────────────
+	// Fires on Ctrl+C, Ctrl+D, SIGHUP, SIGTERM. Any task that didn't reach
+	// its Step 7 cleanup (user killed pi mid-run, crash, etc.) would leave
+	// python children orphaned to launchd. Sweep every tracked workspace
+	// plus a broad fallback for anything we never tracked.
+	pi.on("session_shutdown", async () => {
+		const dirs = Array.from(activeWorkDirs);
+		for (const dir of dirs) {
+			await killProcessesInDir(pi, dir).catch(() => {});
+			cleanupWorkDir(dir);
+		}
+		try {
+			// Broad fallback — scoped strictly to our prefix. Other tools'
+			// temp dirs (tmp.XXXXXX, homebrew-*, xcode-*) are never touched.
+			await pi.exec("bash", ["-lc", `
+				set +e
+				arg_roots=$(pgrep -f '/${WORKDIR_PREFIX}\\.' 2>/dev/null)
+				cwd_roots=$(lsof -d cwd -Fpn 2>/dev/null | awk '
+					/^p/ { pid = substr($0, 2); next }
+					/^n/ { cwd = substr($0, 2); if (cwd ~ /\\/${WORKDIR_PREFIX}\\./) print pid }
+				')
+				roots=$(printf '%s\\n%s\\n' "$arg_roots" "$cwd_roots" | grep -E '^[0-9]+$' | sort -u)
+				[ -z "$roots" ] && exit 0
+				all="$roots"; frontier="$roots"
+				for _ in 1 2 3 4 5 6 7 8; do
+					[ -z "$frontier" ] && break
+					kids=$(printf '%s\\n' $frontier | xargs -n1 pgrep -P 2>/dev/null | grep -E '^[0-9]+$' | sort -u)
+					[ -z "$kids" ] && break
+					new=$(printf '%s\\n' $kids | grep -vxF -f <(printf '%s\\n' $all) 2>/dev/null)
+					[ -z "$new" ] && break
+					all=$(printf '%s\\n%s\\n' "$all" "$new" | sort -u)
+					frontier="$new"
+				done
+				printf '%s\\n' $all | xargs kill 2>/dev/null
+				sleep 0.3
+				printf '%s\\n' $all | xargs kill -9 2>/dev/null
+			`], { timeout: 5000 });
+		} catch {
+			// Best-effort; shutdown path may close pi.exec early.
+		}
 	});
 }
 
@@ -467,11 +623,12 @@ async function runSingleTask(
 	const start = Date.now();
 	const timestamp = new Date().toISOString();
 
-	// Step 1: Create a temp workspace
-	const mkdirResult = await pi.exec("bash", ["-lc", 'mktemp -d']);
+	// Step 1: Create a temp workspace with our distinctive prefix so cleanup
+	// can target only directories we own. Produces $TMPDIR/pi-bench.XXXXXX.
+	const mkdirResult = await pi.exec("bash", ["-lc", `mktemp -d -t ${WORKDIR_PREFIX}`]);
 	const workDir = mkdirResult.stdout.trim();
 
-	if (!workDir || mkdirResult.code !== 0) {
+	if (!workDir || mkdirResult.code !== 0 || !isOwnedWorkDir(workDir)) {
 		return {
 			task: task.name,
 			status: "error",
@@ -481,6 +638,10 @@ async function runSingleTask(
 			timestamp,
 		};
 	}
+
+	// Record in memory + persist to registry so a crashed pi session's
+	// orphans can be recovered by /bench-cleanup on the next run.
+	registerWorkDir(workDir);
 
 	// Step 2: Write setup files
 	for (const [filename, content] of Object.entries(task.setup_files)) {
@@ -512,7 +673,7 @@ async function runSingleTask(
 
 	// Step 4: Wait for the agent to actually pick up the message and finish,
 	// with a timeout to prevent runaway tasks (e.g. infinite loops in tests).
-	const taskTimeout = task.timeout || 120000; // default 2 minutes
+	const taskTimeout = task.timeout || 180000; // default 3 minutes
 	let timedOut = false;
 
 	// Brief yield to let the message get queued

@@ -8,7 +8,7 @@
     "test_next_palindrome.py": "import sys\n\nfrom next_palindrome import next_palindrome\n\nFUNC_NAME = \"next_palindrome\"\ntest_cases = [[[[1, 4, 9, 4, 1]], [1, 5, 0, 5, 1]], [[[1, 3, 1]], [1, 4, 1]], [[[4, 7, 2, 5, 5, 2, 7, 4]], [4, 7, 2, 6, 6, 2, 7, 4]], [[[4, 7, 2, 5, 2, 7, 4]], [4, 7, 2, 6, 2, 7, 4]], [[[9, 9, 9]], [1, 0, 0, 1]]]\n\npassed = 0\nfailed = 0\nfor tc in test_cases:\n    inputs = tc[0]\n    expected = tc[1]\n    try:\n        result = next_palindrome(*inputs)\n        result = list(result)\n        if result == expected:\n            passed += 1\n        else:\n            print(f\"FAIL: {FUNC_NAME}({inputs}) = {result}, expected {expected}\")\n            failed += 1\n    except Exception as e:\n        print(f\"ERROR: {FUNC_NAME}({inputs}) raised {e}\")\n        failed += 1\n\nprint(f\"{passed}/{passed+failed} tests passed\")\nif failed > 0:\n    sys.exit(1)\n"
   },
   "verify": "cd $BENCH_WORK_DIR && python3 test_next_palindrome.py",
-  "timeout": 120000,
+  "timeout": 180000,
   "tags": [
     "quixbugs",
     "python",
