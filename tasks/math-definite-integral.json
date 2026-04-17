@@ -4,7 +4,7 @@
   "dataset": "terminal-bench",
   "instruction": "Using the sympy Python library, compute the definite integral of x**2 * e**x over the interval [0, 1], and return the result in simplified exact form (e.g. an expression in terms of e). Save the result to output.txt in the current directory and also print it to standard output.",
   "setup_files": {},
-  "verify": "cd $BENCH_WORK_DIR && python3 - <<'PY'\nimport sympy, pathlib\nt = pathlib.Path('output.txt').read_text().strip()\nassert t, 'output.txt is empty'\nexpected = sympy.E - 2\ntry:\n    actual = sympy.sympify(t, locals={'e': sympy.E, 'E': sympy.E})\n    assert sympy.simplify(actual - expected) == 0, f'got {actual}, expected {expected}'\nexcept sympy.SympifyError:\n    norm = t.lower().replace(' ', '')\n    assert norm in {'e-2', 'exp(1)-2', '-2+e'}, f'got {t!r}'\nprint('OK:', t, '==', expected)\nPY",
+  "verify": "cd $BENCH_WORK_DIR && python3 - <<'PY'\nimport subprocess, sys, pathlib\ntry:\n    import sympy\nexcept ImportError:\n    subprocess.check_call([sys.executable, '-m', 'pip', 'install', '--quiet', 'sympy'])\n    import sympy\nt = pathlib.Path('output.txt').read_text().strip()\nassert t, 'output.txt is empty'\nexpected = sympy.E - 2\ntry:\n    actual = sympy.sympify(t, locals={'e': sympy.E, 'E': sympy.E})\n    assert sympy.simplify(actual - expected) == 0, f'got {actual}, expected {expected}'\nexcept sympy.SympifyError:\n    norm = t.lower().replace(' ', '')\n    assert norm in {'e-2', 'exp(1)-2', '-2+e'}, f'got {t!r}'\nprint('OK:', t, '==', expected)\nPY",
   "timeout": 180000,
   "tags": [
     "terminal-bench",
