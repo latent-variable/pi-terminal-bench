@@ -206,7 +206,7 @@ To add a task, create a JSON file in `tasks/`:
     "test_buggy.py": "from buggy import broken\nassert broken() == 3"
   },
   "verify": "cd $BENCH_WORK_DIR && python3 test_buggy.py",
-  "timeout": 120000,
+  "timeout": 180000,
   "tags": ["custom", "python"]
 }
 ```
@@ -254,7 +254,7 @@ Run manually if anything slips through. It:
 
 ### Task-level timeouts
 
-Each task has a configurable `timeout` (default 120s). When a command hangs (e.g. running tests on buggy code with an infinite loop), the benchmark:
+Each task has a configurable `timeout` (default 180s; harder tasks use 240s or 360s). When a command hangs (e.g. running tests on buggy code with an infinite loop), the benchmark:
 
 1. **Notifies the model** — sends a steer message explaining the command was killed due to a timeout and likely indicates an infinite loop
 2. **Kills the hung process** — terminates the specific process that exceeded the time limit
@@ -273,11 +273,13 @@ In a batch run (`/bench-run quixbugs`), all tasks share the same conversation co
 
 ## Safety
 
-- All tasks run in isolated temp directories — automatically cleaned up after each task
+- All tasks run in isolated temp directories under `$TMPDIR/pi-bench.XXXXXX`, created with a distinctive prefix so cleanup cannot touch paths owned by other tools
+- Every cleanup path — per-task, `/bench-cleanup`, and session-shutdown — is scoped strictly to basenames starting with `pi-bench.`
+- Active workspaces are persisted to `~/.pi/agent/pi-terminal-bench/active-workdirs.txt` so orphans from a crashed pi session can be recovered on the next run
 - Tasks only contain Python/bash code that reads/writes within their workspace
 - No network access, no system modifications, no file operations outside the temp directory
 - Verification scripts only read from the workspace directory
-- Stray processes are killed after each task completes
+- Stray processes (including descendants reparented to launchd) are killed after each task completes
 
 ## Contributing
 
